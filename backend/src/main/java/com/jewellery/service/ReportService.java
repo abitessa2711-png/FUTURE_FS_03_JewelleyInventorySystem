@@ -27,6 +27,11 @@ public class ReportService {
                 .mapToDouble(Sale::getTotal)
                 .sum();
 
+        double todayTotalWeight = todaySales.stream()
+                .filter(s -> s.getWeight() != null)
+                .mapToDouble(Sale::getWeight)
+                .sum();
+
         double todayTotalGst = todaySales.stream()
                 .filter(s -> s.getGstAmount() != null)
                 .mapToDouble(Sale::getGstAmount)
