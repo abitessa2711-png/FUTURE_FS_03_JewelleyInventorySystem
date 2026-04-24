@@ -43,6 +43,7 @@ public class Sale {
 
     private Double discountPercent;
     private Double discountAmount;
+    private Double gstPercent;
     
     @Column(nullable = false)
     private Double subtotal; // Weight * Rate

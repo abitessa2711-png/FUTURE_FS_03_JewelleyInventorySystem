@@ -26,16 +26,8 @@ public class ProductService {
         if (product.getQuantity() == null) {
             product.setQuantity(0);
         }
-        log.info("Adding/Updating stock for: {} - {} - {} - {}", product.getCategory(), product.getSubcategory(), product.getVariant(), product.getDetail());
-        Optional<Product> existing = productRepository.findExactProduct(
-                product.getCategory(), product.getSubcategory(), product.getVariant(), product.getDetail());
-        
-        if (existing.isPresent()) {
-            Product p = existing.get();
-            p.setWeight(p.getWeight() + product.getWeight());
-            p.setQuantity(p.getQuantity() + product.getQuantity());
-            return productRepository.save(p);
-        }
+        log.info("Adding NEW stock entry for: {} - {} - {} - {}", product.getCategory(), product.getSubcategory(), product.getVariant(), product.getDetail());
+        // No merging - always save as new row
         return productRepository.save(product);
     }
 

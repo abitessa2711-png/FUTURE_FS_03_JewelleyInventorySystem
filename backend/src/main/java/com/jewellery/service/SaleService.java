@@ -26,12 +26,11 @@ public class SaleService {
 
     @Transactional
     public Sale processSale(Sale saleRequest) {
-        log.info("Processing sale for: {} - {} - {} - {}", saleRequest.getCategory(), saleRequest.getSubcategory(), saleRequest.getVariant(), saleRequest.getDetail());
+        log.info("Processing sale for ProductID: {}", saleRequest.getProductId());
 
-        // 1. Find product
-        Product product = productRepository.findExactProduct(
-                saleRequest.getCategory(), saleRequest.getSubcategory(), saleRequest.getVariant(), saleRequest.getDetail())
-                .orElseThrow(() -> new ProductNotFoundException("❌ பொருள் இல்லை"));
+        // 1. Find exact product by ID
+        Product product = productRepository.findById(saleRequest.getProductId())
+                .orElseThrow(() -> new ProductNotFoundException("❌ பொருள் இல்லை (Product Not Found)"));
 
         // 2. Validate input values
         if ((saleRequest.getWeight() == null || saleRequest.getWeight() <= 0) && (saleRequest.getQuantity() == null || saleRequest.getQuantity() <= 0)) {
@@ -41,47 +40,53 @@ public class SaleService {
             throw new RuntimeException("❌ விலை/g கொடுக்க வேண்டும்");
         }
 
-        // 3. Validate stock (weight & quantity)
+        // 3. Validate stock
         if (saleRequest.getWeight() != null && product.getWeight() < saleRequest.getWeight()) {
-            throw new InsufficientStockException("❌ இருப்பில் போதுமான எடை இல்லை (Insufficient Weight)");
+            throw new InsufficientStockException("❌ இருப்பில் போதுமான எடை இல்லை");
         }
-        if (saleRequest.getQuantity() != null && product.getQuantity() < saleRequest.getQuantity()) {
-            throw new InsufficientStockException("❌ இருப்பில் போதுமான எண்ணிக்கை இல்லை (Insufficient Qty)");
+        if (saleRequest.getQuantity() != null && product.getQuantity() != null && product.getQuantity() < saleRequest.getQuantity()) {
+            throw new InsufficientStockException("❌ இருப்பில் போதுமான எண்ணிக்கை இல்லை");
         }
 
-        // 4. Reduce stock
+        // 4. Reduce stock from THIS specific ID
         if (saleRequest.getWeight() != null) {
             product.setWeight(product.getWeight() - saleRequest.getWeight());
         }
-        if (saleRequest.getQuantity() != null) {
+        if (saleRequest.getQuantity() != null && product.getQuantity() != null) {
             product.setQuantity(product.getQuantity() - saleRequest.getQuantity());
         }
+        
+        // If stock becomes zero (or near zero), we could delete it, 
+        // but for now keeping it in DB with 0 value is fine for reports.
         productRepository.save(product);
 
-        // 5. Calculate total (GST 3%)
+        // 5. Calculate total
         double weight = (saleRequest.getWeight() != null) ? saleRequest.getWeight() : 0;
-        double price = saleRequest.getPricePerGram();
-        double subtotal = weight * price;
+        double rate = saleRequest.getPricePerGram();
+        double subtotal = weight * rate;
+
+        double discAmt = (saleRequest.getDiscountAmount() != null) ? saleRequest.getDiscountAmount() : 0.0;
+        double gstAmt = (saleRequest.getGstAmount() != null) ? saleRequest.getGstAmount() : 0.0;
         
-        double discountPercent = (saleRequest.getDiscountPercent() != null) ? saleRequest.getDiscountPercent() : 0;
-        double discountAmount = subtotal * (discountPercent / 100);
-        
-        double taxableAmount = subtotal - discountAmount;
-        double gstAmount = taxableAmount * 0.03; // GST 3%
-        double grandTotal = taxableAmount + gstAmount;
+        double grandTotal = subtotal - discAmt + gstAmt;
 
         saleRequest.setSubtotal(subtotal);
-        saleRequest.setDiscountAmount(discountAmount);
-        saleRequest.setGstAmount(gstAmount);
+        saleRequest.setDiscountAmount(discAmt);
+        saleRequest.setGstAmount(gstAmt);
         saleRequest.setTotal(grandTotal);
-        saleRequest.setPrice(grandTotal); // Compatibility with DB schema
+        saleRequest.setPrice(grandTotal); 
         
-        // 6. Save sale
+        // Copy product details to sale for record keeping
+        saleRequest.setCategory(product.getCategory());
+        saleRequest.setSubcategory(product.getSubcategory());
+        saleRequest.setVariant(product.getVariant());
+        saleRequest.setDetail(product.getDetail());
         saleRequest.setProductId(product.getId());
         saleRequest.setDate(LocalDate.now());
+        
         Sale savedSale = saleRepository.save(saleRequest);
 
-        // 5. Save ledger
+        // 6. Save ledger
         Ledger ledger = Ledger.builder()
                 .type("SALE")
                 .amount(savedSale.getTotal())

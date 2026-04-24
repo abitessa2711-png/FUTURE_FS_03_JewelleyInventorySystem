@@ -11,8 +11,6 @@ import java.time.LocalDateTime;
     @Index(name = "idx_category", columnList = "category"),
     @Index(name = "idx_subcategory", columnList = "subcategory"),
     @Index(name = "idx_variant", columnList = "variant")
-}, uniqueConstraints = {
-    @UniqueConstraint(name = "uc_cat_sub_var_det", columnNames = {"category", "subcategory", "variant", "detail"})
 })
 @Getter
 @Setter

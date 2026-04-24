@@ -18,8 +18,10 @@ public class UserService {
         if (userRepository.findByEmailOrPhoneNumber(user.getEmail(), user.getPhoneNumber()).isPresent()) {
             throw new RuntimeException("Email or Phone number already registered");
         }
-        if (user.getRole() == null || user.getRole().isEmpty()) {
-            user.setRole("admin");
+        if (userRepository.count() == 0) {
+            user.setRole("ADMIN");
+        } else {
+            user.setRole("USER");
         }
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepository.save(user);
