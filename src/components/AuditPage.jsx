@@ -1,6 +1,8 @@
 import React from 'react'
 import { Package, Activity } from 'lucide-react'
-import { CATEGORIES } from '../App'
+import { MASTER_DATA } from '../data/masterData'
+
+const CATEGORIES = Object.keys(MASTER_DATA)
 
 const AuditPage = ({ products = [], soldItems = [] }) => {
   const totalQuantity = (products || []).reduce((sum, p) => sum + (parseInt(p.quantity, 10) || 0), 0)
@@ -20,35 +22,35 @@ const AuditPage = ({ products = [], soldItems = [] }) => {
   return (
     <div className="fade-in" style={{ maxWidth: '900px', margin: '0 auto' }}>
       <h1 style={{ marginBottom: '8px' }}>கணக்காய்வு அறிக்கை</h1>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: '30px' }}>
+      <p style={{ color: 'var(--text-sub)', marginBottom: '30px' }}>
         நிறுவனத்தின் மொத்த இருப்பு மற்றும் விற்பனை சுருக்கம்.
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 1fr) minmax(200px, 1fr)', gap: '24px', marginBottom: '30px' }}>
         
-        <div className="premium-card" style={cardStyle}>
+        <div className="card" style={cardStyle}>
           <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'rgba(52,152,219,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Package size={26} color="#3498DB" />
           </div>
-          <h2 style={{ color: 'var(--text-secondary)', margin: 0 }}>மொத்த இருப்பு (அளவு)</h2>
-          <div style={{ fontSize: '36px', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: '1' }}>{totalQuantity}</div>
+          <h2 style={{ color: 'var(--text-sub)', margin: 0, fontSize: 18 }}>மொத்த இருப்பு (அளவு)</h2>
+          <div style={{ fontSize: '36px', fontWeight: 'bold', color: 'var(--text-main)', lineHeight: '1' }}>{totalQuantity}</div>
         </div>
 
-        <div className="premium-card" style={cardStyle}>
+        <div className="card" style={cardStyle}>
           <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'rgba(46,204,113,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Activity size={26} color="#2ECC71" />
           </div>
-          <h2 style={{ color: 'var(--text-secondary)', margin: 0 }}>மொத்த விற்பனை (அளவு)</h2>
+          <h2 style={{ color: 'var(--text-sub)', margin: 0, fontSize: 18 }}>மொத்த விற்பனை (அளவு)</h2>
           <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#2ECC71', lineHeight: '1' }}>{totalSold}</div>
         </div>
 
       </div>
 
-      <div className="premium-card">
-        <h2 style={{ marginBottom: '20px' }}>வகை வாரியான கணக்கு</h2>
+      <div className="card">
+        <h2 style={{ marginBottom: '20px', fontSize: 18 }}>வகை வாரியான கணக்கு</h2>
         
         {categoryStats.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)', fontWeight: 'bold' }}>
+          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-sub)', fontWeight: 'bold' }}>
             தகவல் இல்லை
           </div>
         ) : (
@@ -57,16 +59,16 @@ const AuditPage = ({ products = [], soldItems = [] }) => {
               <thead>
                 <tr>
                   {['வகை', 'இருப்பு அளவு', 'விற்ற அளவு'].map((h, i) => (
-                    <th key={i}>{h}</th>
+                    <th key={i} style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', padding: '12px' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {categoryStats.map(stat => (
                   <tr key={stat.category} className="table-row">
-                    <td style={{ padding: '12px', fontWeight: 'bold' }}>{stat.category}</td>
-                    <td style={{ padding: '12px', color: '#3498DB', fontWeight: 'bold' }}>{stat.available}</td>
-                    <td style={{ padding: '12px', color: '#2ECC71', fontWeight: 'bold' }}>{stat.sold}</td>
+                    <td style={{ padding: '12px', fontWeight: 'bold', borderBottom: '1px solid var(--border)' }}>{stat.category}</td>
+                    <td style={{ padding: '12px', color: '#3498DB', fontWeight: 'bold', borderBottom: '1px solid var(--border)' }}>{stat.available}</td>
+                    <td style={{ padding: '12px', color: '#2ECC71', fontWeight: 'bold', borderBottom: '1px solid var(--border)' }}>{stat.sold}</td>
                   </tr>
                 ))}
               </tbody>

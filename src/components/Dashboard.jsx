@@ -1,23 +1,31 @@
 import React from 'react'
-import { Package, ShoppingBag, AlertTriangle, TrendingUp } from 'lucide-react'
+import { Package, ShoppingBag, AlertTriangle, TrendingUp, PlusCircle } from 'lucide-react'
 
-const Dashboard = ({ products = [], sales = [] }) => {
+const Dashboard = ({ products = [], sales = [], setActiveTab }) => {
   // Aggregate Stats
   const totalWeight = products.reduce((s, p) => s + (p.weight || 0), 0)
   const totalQty    = products.reduce((s, p) => s + (p.quantity || 0), 0)
-  const lowStock    = products.filter(p => (p.weight < 50) || (p.quantity < 5)) // Threshold 50g or 5pcs
+  const productGroups = {};
+  products.forEach(p => {
+    const key = `${p.category}-${p.subcategory}-${p.variant}`;
+    if (!productGroups[key]) {
+      productGroups[key] = { ...p, totalQuantity: 0, totalWeight: 0 };
+    }
+    productGroups[key].totalQuantity += (p.quantity || 0);
+    productGroups[key].totalWeight += (p.weight || 0);
+  });
+  
+  const lowStock = Object.values(productGroups).filter(g => g.totalQuantity < 3);
   
   const todayStr = new Date().toISOString().split('T')[0]
   const todaysSales = sales.filter(s => (s.date && s.date.split('T')[0]) === todayStr)
   
   const todayRevenue = todaysSales.reduce((s, i) => s + (i.total || 0), 0)
-  const todayGst = todaysSales.reduce((s, i) => s + (i.gstAmount || 0), 0)
   const todaySoldWeight = todaysSales.reduce((s, i) => s + (i.weight || 0), 0)
 
   const cards = [
     { label: 'இருப்பு விபரம்', sub: 'Total Stock (Qty | Wt)', value: `${totalQty} pcs | ${totalWeight.toFixed(2)}g`, icon: <Package />, color: 'var(--gold)' },
     { label: 'இன்றைய விற்பனை', sub: "Today's Net Total", value: `₹${todayRevenue.toLocaleString('en-IN')}`, icon: <TrendingUp />, color: 'var(--success)' },
-    { label: 'இன்றைய GST (3%)', sub: 'Total Tax Collected', value: `₹${todayGst.toLocaleString('en-IN')}`, icon: <ShoppingBag />, color: 'var(--accent)' },
     { label: 'குறைந்த இருப்பு', sub: 'Low Stock Alerts', value: lowStock.length, icon: <AlertTriangle />, color: 'var(--danger)' },
   ]
 
@@ -30,7 +38,7 @@ const Dashboard = ({ products = [], sales = [] }) => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '24px' }}>
         {cards.map((c, i) => (
           <div key={i} className="stat-card">
             <div className="stat-icon" style={{ background: `${c.color}18`, color: c.color }}>
@@ -73,13 +81,13 @@ const Dashboard = ({ products = [], sales = [] }) => {
             {lowStock.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-sub)' }}>அனைத்தும் சரியாக உள்ளது!</div>
             ) : (
-              lowStock.map(p => (
-                <div key={p.id} className="flex-between" style={{ padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
+              lowStock.map((p, idx) => (
+                <div key={idx} className="flex-between" style={{ padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
                   <div>
                     <div className="fw-600" style={{ fontSize: 14 }}>{p.variant}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{p.category} - {p.subcategory}</div>
                   </div>
-                  <div className="text-danger fw-700">{p.quantity} pcs | {p.weight}g</div>
+                  <div className="text-danger fw-700">{p.totalQuantity} pcs | {p.totalWeight.toFixed(2)}g</div>
                 </div>
               ))
             )}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import axios from 'axios'
+import { Gem } from 'lucide-react'
 
 const Login = ({ onLogin, onShowSignup }) => {
   const [loginId, setLoginId] = useState('')
@@ -16,7 +17,8 @@ const Login = ({ onLogin, onShowSignup }) => {
       const resp = await axios.post('/api/auth/login', { loginId, password })
       const data = resp.data
 
-      onLogin(data.data)
+      const userData = data.data.user
+      onLogin({ ...userData, role: userData.role?.toLowerCase(), token: data.data.token })
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || 'சர்வர் இணைப்பு தோல்வியடைந்தது')
@@ -81,6 +83,9 @@ const Login = ({ onLogin, onShowSignup }) => {
       `}</style>
 
       <div className="auth-card">
+        <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#fff', border: '3px solid #D4AF37', margin: '0 auto 16px auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Gem size={40} color="#D4AF37" />
+        </div>
         <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#60A5FA', marginBottom: '4px' }}>TAS Jewellers</h1>
         <p style={{ color: '#94A3B8', fontSize: '14px', marginBottom: '24px' }}>நகை கணக்கு முறைமை</p>
 

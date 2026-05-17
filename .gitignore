@@ -1,4 +1,5 @@
-backend/target/
-node_modules/
-dist/
-Inventory_System/
+node_modules
+dist
+backend/target
+.vite
+*.log

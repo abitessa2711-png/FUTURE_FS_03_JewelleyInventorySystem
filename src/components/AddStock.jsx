@@ -158,8 +158,8 @@ const AddStock = ({ onAddProduct }) => {
       
       <div className="mt-16 card" style={{ background: 'rgba(212,175,55,0.03)', border: '1px dashed var(--gold)' }}>
         <p style={{ fontSize: '13px', color: 'var(--text-sub)', textAlign: 'center' }}>
-          <strong>Note:</strong> ஒரே மாதிரியான பொருட்கள் சேர்க்கப்பட்டால், அவற்றின் எடை தானாகவே கூட்டப்படும். 
-          (Matching items will be merged by weight automatically.)
+          <strong>Note:</strong> ஒவ்வொரு முறை சரக்கு சேர்க்கும் போதும் அது ஒரு தனி பதிவாக (Individual Entry) சேமிக்கப்படும். 
+          (Each stock addition is stored as a separate unique entry.)
         </p>
       </div>
     </div>

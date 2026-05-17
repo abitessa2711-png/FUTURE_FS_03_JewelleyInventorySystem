@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Package, ShoppingBag, Trash2, Search } from 'lucide-react'
+import { Package, ShoppingBag, Trash2, Search, TrendingUp } from 'lucide-react'
 
 const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduct }) => {
   const [filter, setFilter] = useState('')
@@ -14,7 +14,6 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
   const totalStockQty    = products.reduce((s, p) => s + (p.quantity || 0), 0)
   const totalSalesCount  = soldItems.length
   const totalRevenue     = soldItems.reduce((s, i) => s + (i.total || 0), 0)
-  const totalGst         = soldItems.reduce((s, i) => s + (i.gstAmount || 0), 0)
 
   return (
     <div className="animate-fade-in">
@@ -42,12 +41,10 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
           </div>
         </div>
         <div className="card flex" style={{ gap: 12, padding: '12px 20px' }}>
-          <div className="stat-icon" style={{ background: 'var(--accent)18', color: 'var(--accent)', marginBottom: 0 }}>
-             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-          </div>
+          <div className="stat-icon" style={{ background: 'var(--gold)18', color: 'var(--gold)', marginBottom: 0 }}><TrendingUp size={18}/></div>
           <div>
-            <div style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text-sub)' }}>GST (3%)</div>
-            <div className="fw-600">₹{totalGst.toLocaleString('en-IN')}</div>
+            <div style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text-sub)' }}>Customer Count</div>
+            <div className="fw-600">{new Set(soldItems.map(s => s.customerName)).size} Persons</div>
           </div>
         </div>
         <div className="card flex" style={{ gap: 12, padding: '12px 20px' }}>
@@ -109,13 +106,21 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
           <div className="table-wrap">
             <table>
               <thead>
-                <tr><th>Customer</th><th style={{ textAlign: 'right' }}>Quantity | Weight</th><th style={{ textAlign: 'right' }}>Total</th></tr>
+                <tr>
+                  <th>Customer</th>
+                  <th>Item Details</th>
+                  <th style={{ textAlign: 'right' }}>Qty | Weight</th>
+                  <th style={{ textAlign: 'right' }}>Rate/g</th>
+                  <th style={{ textAlign: 'right' }}>Total</th>
+                </tr>
               </thead>
               <tbody>
-                {soldItems.slice(-10).reverse().map((s, i) => (
+                {soldItems.slice(-30).reverse().map((s, i) => (
                   <tr key={i}>
                     <td><div className="fw-600">{s.customerName || 'Walk-in'}</div><div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{s.date?.split('T')[0]}</div></td>
+                    <td><div className="fw-600">{s.variant}</div><div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{s.category} {s.detail ? `- ${s.detail}` : ''}</div></td>
                     <td style={{ textAlign: 'right' }}>{s.quantity || 0} pcs | {s.weight || 0}g</td>
+                    <td style={{ textAlign: 'right' }}>₹{s.pricePerGram?.toLocaleString('en-IN')}</td>
                     <td style={{ textAlign: 'right' }}><span className="text-success fw-600">₹{s.total?.toLocaleString('en-IN')}</span></td>
                   </tr>
                 ))}
@@ -127,7 +132,5 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
     </div>
   )
 }
-
-const TrendingUp = ({ size }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
 
 export default Reports
