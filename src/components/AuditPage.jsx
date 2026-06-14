@@ -68,7 +68,7 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
         நிறுவனத்தின் மொத்த இருப்பு, சேர்க்கப்பட்ட சரக்கு மற்றும் விற்பனை செய்யப்பட்ட பொருட்களின் வரலாறு.
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 1fr) minmax(200px, 1fr)', gap: '24px', marginBottom: '30px' }}>
+      <div className="audit-cards-grid">
         
         <div className="card" style={cardStyle}>
           <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'rgba(52,152,219,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -88,7 +88,7 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
 
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      <div className="audit-tables-grid">
         
         {/* ➕ Added Items Section */}
         <div className="card">

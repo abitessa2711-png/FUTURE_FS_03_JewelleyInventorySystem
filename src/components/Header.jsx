@@ -1,7 +1,7 @@
 import React from 'react'
 import { Menu } from 'lucide-react'
 
-const Header = ({ username, onLogout, toggleTheme, theme, onMenuClick }) => (
+const Header = ({ username, onLogout, onMenuClick }) => (
   <header className="app-header">
     <div className="flex" style={{ gap: '12px', alignItems: 'center' }}>
       <button className="menu-toggle-btn" onClick={onMenuClick} aria-label="Toggle Menu">
@@ -12,10 +12,6 @@ const Header = ({ username, onLogout, toggleTheme, theme, onMenuClick }) => (
     </div>
 
     <div className="header-actions">
-      <button className="btn btn-theme" onClick={toggleTheme}>
-        {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
-      </button>
-
       <div className="user-chip">
         <div className="user-avatar">{(username || 'U').charAt(0).toUpperCase()}</div>
         <span>{username}</span>

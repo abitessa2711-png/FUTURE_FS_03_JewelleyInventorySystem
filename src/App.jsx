@@ -17,7 +17,7 @@ export default function App() {
   const [user, setUser]           = useState(null)
   const [showSignup, setShowSignup] = useState(false)
   const [activeTab, setActiveTab] = useState('dashboard')
-  const [theme, setTheme]         = useState(() => localStorage.getItem('tas_theme') || 'dark')
+  const [theme, setTheme]         = useState('light')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   // ── Data ───────────────────────────────────────────────────────────────────
@@ -152,13 +152,11 @@ export default function App() {
     }
   }, [user])
 
-  // ── Theme toggle ───────────────────────────────────────────────────────────
+  // ── Theme toggle (locked to light) ─────────────────────────────────────────
   useEffect(() => {
-    document.body.className = theme === 'dark' ? 'dark-theme' : ''
-    localStorage.setItem('tas_theme', theme)
-  }, [theme])
-
-  const toggleTheme = () => setTheme(p => p === 'dark' ? 'light' : 'dark')
+    document.body.className = ''
+    localStorage.setItem('tas_theme', 'light')
+  }, [])
 
   // Redirect auditor user away from forbidden tabs
   useEffect(() => {
@@ -388,8 +386,6 @@ export default function App() {
       <div className="app-content">
         <Header
           username={user?.name || 'User'}
-          theme={theme}
-          toggleTheme={toggleTheme}
           onLogout={handleLogout}
           onMenuClick={() => setIsSidebarOpen(true)}
         />
