@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { supabase } from '../supabaseClient';
 
 const Signup = ({ onBack, onSignupSuccess }) => {
   const [formData, setFormData] = useState({
@@ -17,13 +17,23 @@ const Signup = ({ onBack, onSignupSuccess }) => {
     setError('');
 
     try {
-      const resp = await axios.post('/api/auth/signup', { ...formData, role: 'admin' });
-      const data = resp.data;
+      const { data, error: err } = await supabase.auth.signUp({
+        email: formData.email.trim(),
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name.trim(),
+            phone_number: formData.phoneNumber.trim(),
+            role: 'admin'
+          }
+        }
+      });
+      if (err) throw err;
       alert('பதிவு வெற்றிகரமாக முடிந்தது! இப்போது உள்நுழையவும்.');
       onSignupSuccess();
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.message || 'சர்வர் இணைப்பு தோல்வியடைந்தது');
+      setError(err.message || 'கணக்கை உருவாக்குவதில் பிழை');
     } finally {
       setLoading(false);
     }
@@ -35,58 +45,117 @@ const Signup = ({ onBack, onSignupSuccess }) => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#0F172A',
-      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+      background: 'radial-gradient(circle at 20% 30%, rgba(226, 27, 121, 0.12), transparent 45%), radial-gradient(circle at 80% 70%, rgba(79, 30, 130, 0.15), transparent 45%), #0A0F1D',
+      fontFamily: "'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+      position: 'relative',
+      overflow: 'hidden'
     }}>
       <style>{`
         .auth-card {
-          background: rgba(30, 41, 59, 0.7);
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: rgba(15, 23, 42, 0.45);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.08);
           width: 380px;
-          padding: 32px;
-          border-radius: 20px;
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+          padding: 40px;
+          border-radius: 24px;
+          box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1);
           color: white;
           text-align: center;
+          position: relative;
+          z-index: 10;
+        }
+        .logo-circle {
+          width: 90px;
+          height: 105px;
+          margin: 0 auto 20px auto;
+          display: flex;
+          alignItems: center;
+          justifyContent: center;
+          filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.25));
         }
         .auth-input {
           width: 100%;
-          padding: 12px;
-          margin-top: 16px;
-          border-radius: 10px;
-          border: 1px solid #334155;
-          background: #1E293B;
+          padding: 14px 16px;
+          margin-top: 18px;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: rgba(15, 23, 42, 0.5);
           color: white;
           font-size: 14px;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          outline: none;
+          box-sizing: border-box;
+        }
+        .auth-input:focus {
+          border-color: #E21B79;
+          box-shadow: 0 0 12px rgba(226, 27, 121, 0.25);
+          background: rgba(15, 23, 42, 0.7);
         }
         .auth-btn {
-          margin-top: 24px;
+          margin-top: 28px;
           width: 100%;
-          padding: 12px;
-          border-radius: 10px;
+          padding: 14px;
+          border-radius: 12px;
           border: none;
-          background: #2563EB;
+          background: linear-gradient(135deg, #E21B79 0%, #4F1E82 100%);
           color: white;
-          font-weight: bold;
+          font-weight: 600;
+          font-size: 15px;
+          letter-spacing: 0.5px;
           cursor: pointer;
-          transition: 0.3s;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 4px 15px rgba(226, 27, 121, 0.3);
         }
-        .auth-btn:hover { background: #1D4ED8; transform: translateY(-1px); }
+        .auth-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(226, 27, 121, 0.45);
+          filter: brightness(1.1);
+        }
+        .auth-btn:active {
+          transform: translateY(0);
+        }
         .back-link {
-          margin-top: 16px;
+          margin-top: 20px;
           display: block;
           color: #94A3B8;
           text-decoration: none;
           font-size: 13px;
           cursor: pointer;
+          transition: color 0.2s;
         }
-        .back-link:hover { color: white; }
+        .back-link:hover {
+          color: #E21B79;
+        }
       `}</style>
       
       <div className="auth-card">
-        <h2 style={{ color: '#60A5FA', marginBottom: '8px' }}>TAS Jewellers</h2>
-        <p style={{ color: '#94A3B8', fontSize: '14px', marginBottom: '24px' }}>புதிய கணக்கை உருவாக்கவும்</p>
+        <div className="logo-circle">
+          <svg viewBox="0 0 100 115" style={{ width: '100%', height: '100%' }}>
+            <defs>
+              <linearGradient id="goldRing" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#FFE082" />
+                <stop offset="100%" stopColor="#FFB300" />
+              </linearGradient>
+              <linearGradient id="monogramGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#E21B79" />
+                <stop offset="100%" stopColor="#4F1E82" />
+              </linearGradient>
+            </defs>
+            <ellipse cx="50" cy="57.5" rx="38" ry="48" fill="#FFFFFF" stroke="url(#goldRing)" strokeWidth="3" />
+            <g fill="url(#monogramGrad)">
+              {/* Stylized T (left side) */}
+              <path d="M 27 28 H 53 V 33 H 43 V 77 C 43 83, 41 85, 33 85 M 27 28 H 23 V 33 H 27 Z" />
+              {/* Stylized A (slanted middle) */}
+              <path d="M 45 28 L 33 85 H 39 L 47 48 H 63 L 57 75 C 55 83, 56 85, 62 85 H 68 L 57 28 Z" />
+              {/* Horizontal bar of A */}
+              <path d="M 45 58 H 60 M 44 63 H 58" stroke="url(#monogramGrad)" strokeWidth="2" />
+              {/* Stylized S (flowing script curve) */}
+              <path d="M 68 33 C 68 22, 49 22, 48 40 C 47 58, 73 53, 71 72 C 69 86, 51 86, 45 77 L 49 72 C 54 78, 63 80, 65 72 C 67 58, 41 62, 42 40 C 43 22, 61 22, 68 33 Z" />
+            </g>
+          </svg>
+        </div>
+        <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: 'white', marginBottom: '4px', letterSpacing: '0.5px' }}>TAS Jewellers</h2>
+        <p style={{ color: '#94A3B8', fontSize: '13px', marginBottom: '24px' }}>புதிய கணக்கை உருவாக்கவும்</p>
         
         <form onSubmit={handleSubmit}>
           <input 
@@ -109,7 +178,7 @@ const Signup = ({ onBack, onSignupSuccess }) => {
           {error && <p style={{ color: '#F87171', fontSize: '13px', marginTop: '12px' }}>{error}</p>}
           
           <button type="submit" className="auth-btn" disabled={loading}>
-            {loading ? 'காத்திருக்கவும்...' : 'பதிவு செய்க'}
+            {loading ? 'பதிவு செய்கிறது...' : 'பதிவு செய்க'}
           </button>
         </form>
         

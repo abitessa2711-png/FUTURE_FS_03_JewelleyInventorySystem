@@ -1,18 +1,60 @@
 import React from 'react'
 import { Package, Activity } from 'lucide-react'
-import { MASTER_DATA } from '../data/masterData'
 
-const CATEGORIES = Object.keys(MASTER_DATA)
-
-const AuditPage = ({ products = [], soldItems = [] }) => {
+const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
   const totalQuantity = (products || []).reduce((sum, p) => sum + (parseInt(p.quantity, 10) || 0), 0)
   const totalSold = (soldItems || []).reduce((sum, s) => sum + (parseInt(s.quantity, 10) || 0), 0)
 
-  const categoryStats = CATEGORIES.map(category => {
-    const available = (products || []).filter(p => p.category === category).reduce((sum, p) => sum + (parseInt(p.quantity, 10) || 0), 0)
-    const sold = (soldItems || []).filter(s => s.category === category).reduce((sum, s) => sum + (parseInt(s.quantity, 10) || 0), 0)
-    return { category, available, sold }
-  }).filter(stat => stat.available > 0 || stat.sold > 0) // Only show categories that have activity
+  // Split ledger entries by type
+  const addedItems = ledger.filter(item => item.type === 'ADD')
+  const soldEntries = ledger.filter(item => item.type === 'SELL')
+
+  // 1. Group all actual sales from soldItems (which contains total amount) chronologically
+  const salesPoolForSell = {}
+  const sortedSales = [...(soldItems || [])].sort((a, b) => new Date(a.date) - new Date(b.date))
+  
+  sortedSales.forEach(sale => {
+    const key = `${sale.category}||${sale.subcategory || ''}||${sale.variant || ''}||${parseFloat(sale.weight).toFixed(2)}`
+    if (!salesPoolForSell[key]) salesPoolForSell[key] = []
+    salesPoolForSell[key].push(sale.total)
+  })
+
+  // 2. Track consumption indices for matching ledger SELL entries
+  const sellIndices = {}
+  const sellAmounts = {}
+  const sortedSoldEntries = [...soldEntries].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+  
+  sortedSoldEntries.forEach(item => {
+    const key = `${item.category_name}||${item.subcategory_name || ''}||${item.variant_name || ''}||${parseFloat(item.weight).toFixed(2)}`
+    if (salesPoolForSell[key]) {
+      const idx = sellIndices[key] || 0
+      if (idx < salesPoolForSell[key].length) {
+        sellAmounts[item.id] = salesPoolForSell[key][idx]
+        sellIndices[key] = idx + 1
+      }
+    }
+  })
+
+  // 3. Track matching for addedItems
+  const soldPool = {}
+  soldEntries.forEach(s => {
+    const key = `${s.category_name}||${s.subcategory_name || ''}||${s.variant_name || ''}||${parseFloat(s.weight).toFixed(2)}`
+    soldPool[key] = (soldPool[key] || 0) + parseFloat(s.weight)
+  })
+
+  const matchedAddIds = new Set()
+  // Sort additions oldest-first to consume matching sales chronologically
+  const sortedAdds = [...addedItems].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+  
+  sortedAdds.forEach(a => {
+    const key = `${a.category_name}||${a.subcategory_name || ''}||${a.variant_name || ''}||${parseFloat(a.weight).toFixed(2)}`
+    const weightToMatch = parseFloat(a.weight)
+    
+    if (soldPool[key] && soldPool[key] >= weightToMatch - 0.001) {
+      matchedAddIds.add(a.id)
+      soldPool[key] -= weightToMatch
+    }
+  })
 
   const cardStyle = {
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -20,10 +62,10 @@ const AuditPage = ({ products = [], soldItems = [] }) => {
   }
 
   return (
-    <div className="fade-in" style={{ maxWidth: '900px', margin: '0 auto' }}>
-      <h1 style={{ marginBottom: '8px' }}>கணக்காய்வு அறிக்கை</h1>
+    <div className="fade-in">
+      <h1 style={{ marginBottom: '8px' }}>சரக்கு கணக்கு பதிவேடு (Ledger Dashboard)</h1>
       <p style={{ color: 'var(--text-sub)', marginBottom: '30px' }}>
-        நிறுவனத்தின் மொத்த இருப்பு மற்றும் விற்பனை சுருக்கம்.
+        நிறுவனத்தின் மொத்த இருப்பு, சேர்க்கப்பட்ட சரக்கு மற்றும் விற்பனை செய்யப்பட்ட பொருட்களின் வரலாறு.
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 1fr) minmax(200px, 1fr)', gap: '24px', marginBottom: '30px' }}>
@@ -46,35 +88,111 @@ const AuditPage = ({ products = [], soldItems = [] }) => {
 
       </div>
 
-      <div className="card">
-        <h2 style={{ marginBottom: '20px', fontSize: 18 }}>வகை வாரியான கணக்கு</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
         
-        {categoryStats.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-sub)', fontWeight: 'bold' }}>
-            தகவல் இல்லை
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '400px' }}>
+        {/* ➕ Added Items Section */}
+        <div className="card">
+          <h2 style={{ marginBottom: '16px', fontSize: 18, color: 'var(--gold)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>➕ சேர்க்கப்பட்ட பொருட்கள்</span>
+          </h2>
+          <div className="table-wrap" style={{ maxHeight: '450px', overflowY: 'auto' }}>
+            <table>
               <thead>
                 <tr>
-                  {['வகை', 'இருப்பு அளவு', 'விற்ற அளவு'].map((h, i) => (
-                    <th key={i} style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', padding: '12px' }}>{h}</th>
-                  ))}
+                  <th>பொருள் விவரம்</th>
+                  <th style={{ textAlign: 'right' }}>எடை (g)</th>
+                  <th style={{ textAlign: 'right' }}>தேதி</th>
                 </tr>
               </thead>
               <tbody>
-                {categoryStats.map(stat => (
-                  <tr key={stat.category} className="table-row">
-                    <td style={{ padding: '12px', fontWeight: 'bold', borderBottom: '1px solid var(--border)' }}>{stat.category}</td>
-                    <td style={{ padding: '12px', color: '#3498DB', fontWeight: 'bold', borderBottom: '1px solid var(--border)' }}>{stat.available}</td>
-                    <td style={{ padding: '12px', color: '#2ECC71', fontWeight: 'bold', borderBottom: '1px solid var(--border)' }}>{stat.sold}</td>
+                {addedItems.map(item => {
+                  const isSold = matchedAddIds.has(item.id)
+                  return (
+                    <tr key={item.id} className="table-row" style={isSold ? { opacity: 0.85 } : {}}>
+                      <td>
+                        <div className="fw-600" style={isSold ? { textDecoration: 'line-through', color: 'var(--text-sub)' } : {}}>
+                          {item.variant_name || '—'}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>
+                          {item.category_name} {item.subcategory_name ? `· ${item.subcategory_name}` : ''}
+                        </div>
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: 600, color: isSold ? '#EF4444' : 'var(--gold)' }}>
+                        {parseFloat(item.weight || 0).toFixed(2)}g
+                        {isSold && (
+                          <span style={{ fontSize: 9, fontWeight: 500, display: 'block', color: '#EF4444', marginTop: '2px' }}>
+                            (விற்பனை செய்யப்பட்டது)
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'right', fontSize: 11, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>
+                        {new Date(item.created_at).toLocaleDateString('en-IN')}
+                      </td>
+                    </tr>
+                  )
+                })}
+                {addedItems.length === 0 && (
+                  <tr>
+                    <td colSpan="3" style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-sub)' }}>
+                      பதிவுகள் இல்லை
+                    </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
-        )}
+        </div>
+
+        {/* ➖ Sold Items Section */}
+        <div className="card">
+          <h2 style={{ marginBottom: '16px', fontSize: 18, color: '#EF4444', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>➖ விற்பனை செய்யப்பட்ட பொருட்கள்</span>
+          </h2>
+          <div className="table-wrap" style={{ maxHeight: '450px', overflowY: 'auto' }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>பொருள் விவரம்</th>
+                  <th style={{ textAlign: 'right' }}>எடை (g)</th>
+                  <th style={{ textAlign: 'right' }}>விற்பனை தொகை</th>
+                  <th style={{ textAlign: 'right' }}>தேதி</th>
+                </tr>
+              </thead>
+              <tbody>
+                {soldEntries.map(item => {
+                  const sellAmt = sellAmounts[item.id]
+                  return (
+                    <tr key={item.id} className="table-row">
+                      <td>
+                        <div className="fw-600">{item.variant_name || '—'}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>
+                          {item.category_name} {item.subcategory_name ? `· ${item.subcategory_name}` : ''}
+                        </div>
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: 600 }}>
+                        {parseFloat(item.weight || 0).toFixed(2)}g
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: 600 }}>
+                        {sellAmt !== undefined ? `₹${sellAmt.toLocaleString('en-IN')}` : '—'}
+                      </td>
+                      <td style={{ textAlign: 'right', fontSize: 11, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>
+                        {new Date(item.created_at).toLocaleDateString('en-IN')}
+                      </td>
+                    </tr>
+                  )
+                })}
+                {soldEntries.length === 0 && (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-sub)' }}>
+                      பதிவுகள் இல்லை
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </div>
   )

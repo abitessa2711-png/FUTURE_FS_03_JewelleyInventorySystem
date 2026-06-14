@@ -4,13 +4,57 @@ import { Package, ShoppingBag, Trash2, Search, TrendingUp } from 'lucide-react'
 const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduct }) => {
   const [filter, setFilter] = useState('')
 
-  const filtered = products.filter(p =>
-    (p.category || '').toLowerCase().includes(filter.toLowerCase()) ||
+  // ── Aggregation rules for Summary Dashboard (அறிக்கை) ────────────────────
+  const groupedStock = {}
+  products.forEach(p => {
+    const w = parseFloat(p.weight || 0)
+    if (w <= 0) return // Case 3: Ignore all zero stock records
+
+    const cat = p.category
+    const sub = p.subcategory
+
+    // Generic subcategory labels from mock data to treat as "no subcategory"
+    const isGenericSub = !sub || sub === 'வகைகள்' || sub === 'பொருட்கள்' || sub === 'வகைகள் ' || sub === 'பொருட்கள் '
+
+    if (isGenericSub) {
+      // Case 2: If Category has no Subcategory
+      const key = cat
+      if (!groupedStock[key]) {
+        groupedStock[key] = {
+          category: cat,
+          subcategory: null,
+          weight: 0,
+          quantity: 0
+        }
+      }
+      groupedStock[key].weight += ((p.quantity || 0) * w)
+      groupedStock[key].quantity += (parseInt(p.quantity, 10) || 0)
+    } else {
+      // Case 1: If Category has Subcategories
+      const key = `${cat} - ${sub}`
+      if (!groupedStock[key]) {
+        groupedStock[key] = {
+          category: cat,
+          subcategory: sub,
+          weight: 0,
+          quantity: 0
+        }
+      }
+      groupedStock[key].weight += ((p.quantity || 0) * w)
+      groupedStock[key].quantity += (parseInt(p.quantity, 10) || 0)
+    }
+  })
+
+  // Filter products for the detailed view, ignoring zero stock items (Case 3)
+  const filteredProducts = products.filter(p =>
+    ((p.category || '').toLowerCase().includes(filter.toLowerCase()) ||
     (p.variant   || '').toLowerCase().includes(filter.toLowerCase()) ||
-    (p.subcategory || '').toLowerCase().includes(filter.toLowerCase())
+    (p.subcategory || '').toLowerCase().includes(filter.toLowerCase()) ||
+    (p.detail      || '').toLowerCase().includes(filter.toLowerCase())) &&
+    (p.quantity > 0 && p.weight > 0)
   )
 
-  const totalStockWeight = products.reduce((s, p) => s + (p.weight || 0), 0)
+  const totalStockWeight = products.reduce((s, p) => s + ((p.quantity || 0) * (p.weight || 0)), 0)
   const totalStockQty    = products.reduce((s, p) => s + (p.quantity || 0), 0)
   const totalSalesCount  = soldItems.length
   const totalRevenue     = soldItems.reduce((s, i) => s + (i.total || 0), 0)
@@ -20,7 +64,7 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
       <div className="flex-between mb-16">
         <div>
           <h2 style={{ fontSize: '24px', fontWeight: 700 }}>அறிக்கைகள் & கணக்கு</h2>
-          <p className="text-sub">Full Inventory & Sales History</p>
+          <p className="text-sub">Full Inventory Summary & Sales History</p>
         </div>
       </div>
 
@@ -56,17 +100,17 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px' }}>
-        {/* Inventory Report */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '30px' }}>
+        {/* Inventory Summary Report */}
         <div className="card">
           <div className="flex-between mb-16">
-            <div className="card-title" style={{ border: 'none', marginBottom: 0, paddingBottom: 0 }}>சரக்கு விபரம் (Inventory)</div>
-            <div className="flex" style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '0 10px', width: 200 }}>
+            <div className="card-title" style={{ border: 'none', marginBottom: 0, paddingBottom: 0 }}>சரக்கு இருப்பு அறிக்கை (Inventory Details)</div>
+            <div className="flex" style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '0 10px', width: 250 }}>
               <Search size={14} color="var(--text-sub)" />
               <input 
                 type="text" placeholder="Search..." 
                 value={filter} onChange={e => setFilter(e.target.value)}
-                style={{ border: 'none', height: 34, background: 'transparent' }} 
+                style={{ border: 'none', height: 38, background: 'transparent' }} 
               />
             </div>
           </div>
@@ -74,27 +118,31 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
             <table>
               <thead>
                 <tr>
-                  <th>Item / Category</th>
-                  <th>Sub</th>
-                  <th style={{ textAlign: 'right' }}>Weight</th>
-                  {role === 'admin' && <th></th>}
+                  <th>பிரிவு & மாடல் (Category & Variant/Size)</th>
+                  <th>துணை பிரிவு (Subcategory)</th>
+                  <th>விவரம் (Detail)</th>
+                  <th style={{ textAlign: 'right' }}>இருப்பு (Stock Qty | Weight)</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(p => (
-                  <tr key={p.id}>
-                    <td><div className="fw-600">{p.variant}</div><div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{p.category}</div></td>
-                    <td>{p.subcategory}</td>
-                    <td style={{ textAlign: 'right' }}><span className="text-gold fw-600">{p.quantity} pcs | {p.weight}g</span></td>
-                    {role === 'admin' && (
-                      <td style={{ textAlign: 'right' }}>
-                        <button className="btn btn-danger-ghost" style={{ padding: 4 }} onClick={() => window.confirm('Delete?') && deleteProduct(p.id)}>
-                          <Trash2 size={13} />
-                        </button>
-                      </td>
-                    )}
+                {filteredProducts.map(p => (
+                  <tr key={p.id} className="table-row">
+                    <td>
+                      <div className="fw-600">{p.variant}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{p.category}</div>
+                    </td>
+                    <td>{p.subcategory || '—'}</td>
+                    <td>{p.detail || '—'}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <span className="text-gold fw-600">{p.quantity} pcs | {p.weight}g</span>
+                    </td>
                   </tr>
                 ))}
+                {filteredProducts.length === 0 && (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: 'var(--text-sub)' }}>தகவல் இல்லை</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -116,7 +164,7 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
               </thead>
               <tbody>
                 {soldItems.slice(-30).reverse().map((s, i) => (
-                  <tr key={i}>
+                  <tr key={i} className="table-row">
                     <td><div className="fw-600">{s.customerName || 'Walk-in'}</div><div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{s.date?.split('T')[0]}</div></td>
                     <td><div className="fw-600">{s.variant}</div><div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{s.category} {s.detail ? `- ${s.detail}` : ''}</div></td>
                     <td style={{ textAlign: 'right' }}>{s.quantity || 0} pcs | {s.weight || 0}g</td>
@@ -124,6 +172,11 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
                     <td style={{ textAlign: 'right' }}><span className="text-success fw-600">₹{s.total?.toLocaleString('en-IN')}</span></td>
                   </tr>
                 ))}
+                {soldItems.length === 0 && (
+                  <tr>
+                    <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: 'var(--text-sub)' }}>தகவல் இல்லை</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

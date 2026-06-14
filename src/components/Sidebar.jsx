@@ -2,19 +2,17 @@ import React from 'react'
 import { PlusCircle, ShoppingBag, TrendingUp, Home, Package, ClipboardCheck, RotateCcw, BarChart2, AlertTriangle, Receipt } from 'lucide-react'
 
 const MENU = [
-  { id: 'dashboard', label: 'முகப்பு',       sub: 'Dashboard',        icon: <Home size={17} />,          roles: ['admin', 'auditor', 'employee'] },
+  { id: 'dashboard', label: 'முகப்பு',       sub: 'Dashboard',        icon: <Home size={17} />,          roles: ['admin', 'employee'] },
   { id: 'stock',     label: 'இருப்பு',        sub: 'Stock List',       icon: <Package size={17} />,       roles: ['admin', 'auditor', 'employee'] },
-  { id: 'add',       label: 'சேர்க்கை',       sub: 'Add Stock',        icon: <PlusCircle size={17} />,    roles: ['admin', 'employee'] },
-  { id: 'restock',   label: 'மீண்டும் நிரப்பு', sub: 'Restock',         icon: <AlertTriangle size={17} />, roles: ['admin', 'employee'] },
-  { id: 'sell',      label: 'விற்பனை / பில்', sub: 'Sell & Bill',      icon: <ShoppingBag size={17} />,   roles: ['admin', 'employee'] },
-  { id: 'sold',      label: 'விற்பனை வரலாறு', sub: 'Sold Items',       icon: <Receipt size={17} />,       roles: ['admin', 'auditor', 'employee'] },
-  { id: 'returns',   label: 'திரும்பப் பெறல்', sub: 'Returns',          icon: <RotateCcw size={17} />,     roles: ['admin', 'employee'] },
+  { id: 'add',       label: 'சேர்க்கை',       sub: 'Add Stock',        icon: <PlusCircle size={17} />,    roles: ['admin', 'auditor', 'employee'] },
+  { id: 'sell',      label: 'விற்பனை / பில்', sub: 'Sell & Bill',      icon: <ShoppingBag size={17} />,   roles: ['admin', 'auditor', 'employee'] },
+  { id: 'sold',      label: 'விற்பனை வரலாறு', sub: 'Sold Items',       icon: <Receipt size={17} />,       roles: ['admin', 'employee'] },
   { id: 'audit',     label: 'கணக்காய்வு',     sub: 'Inventory Audit',  icon: <ClipboardCheck size={17} />, roles: ['admin', 'auditor'] },
-  { id: 'reports',   label: 'அறிக்கைகள்',     sub: 'Reports',          icon: <BarChart2 size={17} />,     roles: ['admin', 'auditor'] },
+  { id: 'reports',   label: 'அறிக்கைகள்',     sub: 'Reports',          icon: <BarChart2 size={17} />,     roles: ['admin'] },
 ]
 
 const Sidebar = ({ activeTab, setActiveTab, role = 'admin' }) => {
-  const visible = MENU;
+  const visible = MENU.filter(item => item.roles.includes(role.toLowerCase()));
 
   return (
     <div className="sidebar">

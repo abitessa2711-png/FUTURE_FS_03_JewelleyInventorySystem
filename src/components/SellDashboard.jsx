@@ -44,8 +44,8 @@ const SellDashboard = ({ products = [], processSale }) => {
     const dAmt = parseFloat(formData.discountAmt || 0)
     const gAmt = parseFloat(formData.gstAmt || 0)
     
-    if (!selectedStockId) {
-      alert('தயவுசெய்து இருப்பைத் தேர்ந்தெடுக்கவும் (Select specific stock)')
+    if (!selectedStockId || !availableStock) {
+      alert('இந்த பொருள் இருப்பில் இல்லை')
       return
     }
     if (w <= 0 && q <= 0) {
@@ -59,11 +59,11 @@ const SellDashboard = ({ products = [], processSale }) => {
 
     if (availableStock) {
       if (w > 0 && availableStock.weight < w) {
-        alert(`போதுமான எடை இல்லை! Available: ${availableStock.weight}g`)
+        alert('போதுமான இருப்பு இல்லை')
         return
       }
       if (q > 0 && availableStock.quantity < q) {
-        alert(`போதுமான எண்ணிக்கை இல்லை! Available: ${availableStock.quantity} pcs`)
+        alert('போதுமான இருப்பு இல்லை')
         return
       }
     }
@@ -167,12 +167,12 @@ const SellDashboard = ({ products = [], processSale }) => {
                 const id = e.target.value;
                 setSelectedStockId(id);
                 const s = products.find(p => p.id === parseInt(id));
-                if (s) setFormData({ ...formData, detail: s.detail, weight: s.weight.toString(), quantity: (s.quantity || 0).toString() });
+                if (s) setFormData({ ...formData, detail: s.detail, weight: s.weight.toString(), quantity: "1" });
               }} disabled={matchingStocks.length === 0}>
                 <option value="">— {matchingStocks.length > 0 ? 'Select Stock Entry' : 'No Stock Available'} —</option>
                 {matchingStocks.map(s => (
                   <option key={s.id} value={s.id}>
-                    ID: {s.id} | {s.detail || 'No Detail'} | {s.weight}g | {s.quantity} pcs | {new Date(s.createdAt).toLocaleDateString()}
+                    ID: {s.id} | {s.detail || 'No Detail'} | {s.quantity} pcs | {s.weight}g | {new Date(s.createdAt).toLocaleDateString()}
                   </option>
                 ))}
               </select>
@@ -184,7 +184,11 @@ const SellDashboard = ({ products = [], processSale }) => {
             </div>
             <div className="form-group">
               <label>விற்கப்படும் எண்ணிக்கை (Qty)</label>
-              <input type="number" value={formData.quantity} onChange={e => setFormData({ ...formData, quantity: e.target.value })} />
+              <input type="number" value={formData.quantity} onChange={e => {
+                const q = parseInt(e.target.value || 0);
+                const w = availableStock ? (q * availableStock.weight) : 0;
+                setFormData({ ...formData, quantity: e.target.value, weight: w.toString() });
+              }} />
             </div>
             
             <div className="form-group">
