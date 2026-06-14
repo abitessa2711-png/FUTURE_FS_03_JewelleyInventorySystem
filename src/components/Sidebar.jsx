@@ -1,5 +1,5 @@
 import React from 'react'
-import { PlusCircle, ShoppingBag, TrendingUp, Home, Package, ClipboardCheck, RotateCcw, BarChart2, AlertTriangle, Receipt } from 'lucide-react'
+import { PlusCircle, ShoppingBag, TrendingUp, Home, Package, ClipboardCheck, RotateCcw, BarChart2, AlertTriangle, Receipt, Printer } from 'lucide-react'
 
 const MENU = [
   { id: 'dashboard', label: 'முகப்பு',       sub: 'Dashboard',        icon: <Home size={17} />,          roles: ['admin', 'employee'] },
@@ -7,6 +7,7 @@ const MENU = [
   { id: 'add',       label: 'சேர்க்கை',       sub: 'Add Stock',        icon: <PlusCircle size={17} />,    roles: ['admin', 'auditor', 'employee'] },
   { id: 'sell',      label: 'விற்பனை / பில்', sub: 'Sell & Bill',      icon: <ShoppingBag size={17} />,   roles: ['admin', 'auditor', 'employee'] },
   { id: 'sold',      label: 'விற்பனை வரலாறு', sub: 'Sold Items',       icon: <Receipt size={17} />,       roles: ['admin', 'employee'] },
+  { id: 'daily_report', label: 'இன்றைய அறிக்கை', sub: 'Daily Xerox Report', icon: <Printer size={17} />,   roles: ['admin', 'employee'] },
   { id: 'audit',     label: 'கணக்காய்வு',     sub: 'Inventory Audit',  icon: <ClipboardCheck size={17} />, roles: ['admin', 'auditor'] },
   { id: 'reports',   label: 'அறிக்கைகள்',     sub: 'Reports',          icon: <BarChart2 size={17} />,     roles: ['admin'] },
 ]

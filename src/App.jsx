@@ -10,6 +10,7 @@ import Dashboard      from './components/Dashboard'
 import AuditPage      from './components/AuditPage'
 import SoldItems      from './components/SoldItems'
 import StockDashboard from './components/StockDashboard'
+import TodayReport    from './components/TodayReport'
 import { supabase }   from './supabaseClient'
 
 export default function App() {
@@ -368,6 +369,7 @@ export default function App() {
     add:       <AddStock       onAddProduct={addProduct} />,
     sell:      <SellDashboard  products={products}   processSale={processSale} />,
     sold:      <SoldItems      soldItems={soldItems} />,
+    daily_report: <TodayReport products={products}   soldItems={soldItems} ledger={ledger} />,
     audit:     <AuditPage      products={products}   soldItems={soldItems} ledger={ledger} />,
     reports:   <Reports        products={products}   soldItems={soldItems} role={user?.role} deleteProduct={deleteProduct} />
   }
