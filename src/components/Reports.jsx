@@ -69,7 +69,7 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
       </div>
 
       {/* Mini Stats Belt */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+      <div className="reports-stats-grid">
         <div className="card flex" style={{ gap: 12, padding: '12px 20px' }}>
           <div className="stat-icon" style={{ background: 'var(--gold)18', color: 'var(--gold)', marginBottom: 0 }}><Package size={18}/></div>
           <div>
@@ -119,8 +119,8 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
               <thead>
                 <tr>
                   <th>பிரிவு & மாடல் (Category & Variant/Size)</th>
-                  <th>துணை பிரிவு (Subcategory)</th>
-                  <th>விவரம் (Detail)</th>
+                  <th className="desktop-only-col">துணை பிரிவு (Subcategory)</th>
+                  <th className="desktop-only-col">விவரம் (Detail)</th>
                   <th style={{ textAlign: 'right' }}>இருப்பு (Stock Qty | Weight)</th>
                 </tr>
               </thead>
@@ -129,10 +129,17 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
                   <tr key={p.id} className="table-row">
                     <td>
                       <div className="fw-600">{p.variant}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{p.category}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>
+                        {p.category}{p.subcategory ? ` · ${p.subcategory}` : ''}
+                      </div>
+                      {p.detail && (
+                        <div className="mobile-only-detail-inline" style={{ fontSize: 10, color: 'var(--text-sub)', marginTop: '2px' }}>
+                          {p.detail}
+                        </div>
+                      )}
                     </td>
-                    <td>{p.subcategory || '—'}</td>
-                    <td>{p.detail || '—'}</td>
+                    <td className="desktop-only-col">{p.subcategory || '—'}</td>
+                    <td className="desktop-only-col">{p.detail || '—'}</td>
                     <td style={{ textAlign: 'right' }}>
                       <span className="text-gold fw-600">{p.quantity} pcs | {p.weight}g</span>
                     </td>
@@ -158,7 +165,7 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
                   <th>Customer</th>
                   <th>Item Details</th>
                   <th style={{ textAlign: 'right' }}>Qty | Weight</th>
-                  <th style={{ textAlign: 'right' }}>Rate/g</th>
+                  <th className="desktop-only-col" style={{ textAlign: 'right' }}>Rate/g</th>
                   <th style={{ textAlign: 'right' }}>Total</th>
                 </tr>
               </thead>
@@ -167,8 +174,15 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
                   <tr key={i} className="table-row">
                     <td><div className="fw-600">{s.customerName || 'Walk-in'}</div><div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{s.date?.split('T')[0]}</div></td>
                     <td><div className="fw-600">{s.variant}</div><div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{s.category} {s.detail ? `- ${s.detail}` : ''}</div></td>
-                    <td style={{ textAlign: 'right' }}>{s.quantity || 0} pcs | {s.weight || 0}g</td>
-                    <td style={{ textAlign: 'right' }}>₹{s.pricePerGram?.toLocaleString('en-IN')}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div>{s.quantity || 0} pcs | {s.weight || 0}g</div>
+                      {s.pricePerGram !== undefined && (
+                        <div className="mobile-only-detail-inline" style={{ fontSize: 10, color: 'var(--text-sub)', marginTop: '2px' }}>
+                          ₹{s.pricePerGram?.toLocaleString('en-IN')}/g
+                        </div>
+                      )}
+                    </td>
+                    <td className="desktop-only-col" style={{ textAlign: 'right' }}>₹{s.pricePerGram?.toLocaleString('en-IN')}</td>
                     <td style={{ textAlign: 'right' }}><span className="text-success fw-600">₹{s.total?.toLocaleString('en-IN')}</span></td>
                   </tr>
                 ))}
