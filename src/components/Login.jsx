@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { supabase } from '../supabaseClient'
+import logoImg from './logo.jpg'
 
 const Login = ({ onLogin, onShowSignup }) => {
   const [loginId, setLoginId] = useState('')
@@ -84,13 +85,15 @@ const Login = ({ onLogin, onShowSignup }) => {
           z-index: 10;
         }
         .logo-circle {
-          width: 90px;
-          height: 105px;
-          margin: 0 auto 20px auto;
+          width: 95px;
+          height: 95px;
+          margin: 0 auto 24px auto;
           display: flex;
-          alignItems: center;
-          justifyContent: center;
-          filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.25));
+          align-items: center;
+          justify-content: center;
+          filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.35));
+          border-radius: 50%;
+          overflow: hidden;
         }
         .auth-input {
           width: 100%;
@@ -149,29 +152,7 @@ const Login = ({ onLogin, onShowSignup }) => {
 
       <div className="auth-card">
         <div className="logo-circle">
-          <svg viewBox="0 0 100 115" style={{ width: '100%', height: '100%' }}>
-            <defs>
-              <linearGradient id="goldRing" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#FFE082" />
-                <stop offset="100%" stopColor="#FFB300" />
-              </linearGradient>
-              <linearGradient id="monogramGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#E21B79" />
-                <stop offset="100%" stopColor="#4F1E82" />
-              </linearGradient>
-            </defs>
-            <ellipse cx="50" cy="57.5" rx="38" ry="48" fill="#FFFFFF" stroke="url(#goldRing)" strokeWidth="3" />
-            <g fill="url(#monogramGrad)">
-              {/* Stylized T (left side) */}
-              <path d="M 27 28 H 53 V 33 H 43 V 77 C 43 83, 41 85, 33 85 M 27 28 H 23 V 33 H 27 Z" />
-              {/* Stylized A (slanted middle) */}
-              <path d="M 45 28 L 33 85 H 39 L 47 48 H 63 L 57 75 C 55 83, 56 85, 62 85 H 68 L 57 28 Z" />
-              {/* Horizontal bar of A */}
-              <path d="M 45 58 H 60 M 44 63 H 58" stroke="url(#monogramGrad)" strokeWidth="2" />
-              {/* Stylized S (flowing script curve) */}
-              <path d="M 68 33 C 68 22, 49 22, 48 40 C 47 58, 73 53, 71 72 C 69 86, 51 86, 45 77 L 49 72 C 54 78, 63 80, 65 72 C 67 58, 41 62, 42 40 C 43 22, 61 22, 68 33 Z" />
-            </g>
-          </svg>
+          <img src={logoImg} alt="TAS Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
         <h1 style={{ fontSize: '26px', fontWeight: 'bold', color: 'white', marginBottom: '4px', letterSpacing: '0.5px' }}>TAS Jewellers</h1>
         <p style={{ color: '#94A3B8', fontSize: '13px', marginBottom: '24px' }}>நகை கணக்கு முறைமை</p>
