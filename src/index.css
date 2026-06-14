@@ -582,10 +582,6 @@ td { color: var(--text-main); }
   margin-bottom: 24px;
 }
 
-.mobile-only-detail-inline {
-  display: none;
-}
-
 /* ======== MOBILE RESPONSIVENESS ======== */
 .menu-toggle-btn {
   display: none;
@@ -757,32 +753,25 @@ td { color: var(--text-main); }
     font-size: 13px !important;
   }
 
-  /* Table styling on mobile to fit all columns */
+  /* Table styling on mobile to fit all columns via horizontal scrolling */
   .table-wrap table {
-    font-size: 11px !important;
+    font-size: 12px !important;
+    min-width: 600px !important; /* Force table to stay wide enough to scroll horizontally */
   }
 
   .table-wrap th, 
   .table-wrap td {
-    padding: 6px 4px !important;
-    font-size: 11px !important;
+    padding: 10px 8px !important;
+    font-size: 12px !important;
   }
 
   .table-wrap th {
-    white-space: normal !important;
-    font-size: 10px !important;
-  }
-
-  .table-wrap td div.fw-600 {
+    white-space: nowrap !important;
     font-size: 11px !important;
   }
 
-  .desktop-only-col {
-    display: none !important;
-  }
-
-  .mobile-only-detail-inline {
-    display: block !important;
+  .table-wrap td div.fw-600 {
+    font-size: 12px !important;
   }
 
   /* Reports Page Stats Grid on Mobile */
