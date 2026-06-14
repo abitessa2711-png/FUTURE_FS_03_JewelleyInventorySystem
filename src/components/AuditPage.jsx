@@ -1,7 +1,25 @@
-import React from 'react'
-import { Package, Activity } from 'lucide-react'
+import React, { useState } from 'react'
+import { Package, Activity, Printer } from 'lucide-react'
 
 const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
+  const [printTarget, setPrintTarget] = useState(null)
+
+  const handlePrintAdded = () => {
+    setPrintTarget('added');
+    setTimeout(() => {
+      window.print();
+      setPrintTarget(null);
+    }, 150);
+  };
+
+  const handlePrintSold = () => {
+    setPrintTarget('sold');
+    setTimeout(() => {
+      window.print();
+      setPrintTarget(null);
+    }, 150);
+  };
+
   const totalQuantity = (products || []).reduce((sum, p) => sum + (parseInt(p.quantity, 10) || 0), 0)
   const totalSold = (soldItems || []).reduce((sum, s) => sum + (parseInt(s.quantity, 10) || 0), 0)
 
@@ -63,8 +81,17 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
 
   return (
     <div className="fade-in">
-      <h1 style={{ marginBottom: '8px' }}>சரக்கு கணக்கு பதிவேடு (Ledger Dashboard)</h1>
-      <p style={{ color: 'var(--text-sub)', marginBottom: '30px' }}>
+      {printTarget && (
+        <style>{`
+          @media print {
+            ${printTarget === 'added' ? '.audit-sold-card, .audit-cards-grid' : '.audit-added-card, .audit-cards-grid'} {
+              display: none !important;
+            }
+          }
+        `}</style>
+      )}
+      <h1 style={{ marginBottom: '8px' }} className="print-hidden">சரக்கு கணக்கு பதிவேடு (Ledger Dashboard)</h1>
+      <p style={{ color: 'var(--text-sub)', marginBottom: '30px' }} className="print-hidden">
         நிறுவனத்தின் மொத்த இருப்பு, சேர்க்கப்பட்ட சரக்கு மற்றும் விற்பனை செய்யப்பட்ட பொருட்களின் வரலாறு.
       </p>
 
@@ -91,10 +118,30 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
       <div className="audit-tables-grid">
         
         {/* ➕ Added Items Section */}
-        <div className="card">
-          <h2 style={{ marginBottom: '16px', fontSize: 18, color: 'var(--gold)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>➕ சேர்க்கப்பட்ட பொருட்கள்</span>
-          </h2>
+        <div className="card audit-added-card">
+          <div className="flex-between mb-16">
+            <h2 style={{ fontSize: 18, color: 'var(--gold)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+              <span>➕ சேர்க்கப்பட்ட பொருட்கள்</span>
+            </h2>
+            <button
+              onClick={handlePrintAdded}
+              className="btn flex print-hidden"
+              style={{
+                backgroundColor: 'var(--gold)',
+                color: 'white',
+                border: 'none',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontWeight: 600,
+                fontSize: '13px',
+                cursor: 'pointer',
+                gap: '6px'
+              }}
+            >
+              <Printer size={14} />
+              <span>PDF-ஆக பதிவிறக்கு (Download PDF)</span>
+            </button>
+          </div>
           <div className="table-wrap" style={{ maxHeight: '450px', overflowY: 'auto' }}>
             <table>
               <thead>
@@ -144,10 +191,30 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
         </div>
 
         {/* ➖ Sold Items Section */}
-        <div className="card">
-          <h2 style={{ marginBottom: '16px', fontSize: 18, color: '#EF4444', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>➖ விற்பனை செய்யப்பட்ட பொருட்கள்</span>
-          </h2>
+        <div className="card audit-sold-card">
+          <div className="flex-between mb-16">
+            <h2 style={{ fontSize: 18, color: '#EF4444', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+              <span>➖ விற்பனை செய்யப்பட்ட பொருட்கள்</span>
+            </h2>
+            <button
+              onClick={handlePrintSold}
+              className="btn flex print-hidden"
+              style={{
+                backgroundColor: 'var(--gold)',
+                color: 'white',
+                border: 'none',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontWeight: 600,
+                fontSize: '13px',
+                cursor: 'pointer',
+                gap: '6px'
+              }}
+            >
+              <Printer size={14} />
+              <span>PDF-ஆக பதிவிறக்கு (Download PDF)</span>
+            </button>
+          </div>
           <div className="table-wrap" style={{ maxHeight: '450px', overflowY: 'auto' }}>
             <table>
               <thead>

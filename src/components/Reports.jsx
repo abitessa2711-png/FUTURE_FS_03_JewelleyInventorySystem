@@ -1,8 +1,25 @@
 import React, { useState } from 'react'
-import { Package, ShoppingBag, Trash2, Search, TrendingUp } from 'lucide-react'
+import { Package, ShoppingBag, Trash2, Search, TrendingUp, Printer } from 'lucide-react'
 
 const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduct }) => {
   const [filter, setFilter] = useState('')
+  const [printTarget, setPrintTarget] = useState(null)
+
+  const handlePrintStock = () => {
+    setPrintTarget('stock');
+    setTimeout(() => {
+      window.print();
+      setPrintTarget(null);
+    }, 150);
+  };
+
+  const handlePrintSales = () => {
+    setPrintTarget('sales');
+    setTimeout(() => {
+      window.print();
+      setPrintTarget(null);
+    }, 150);
+  };
 
   // ── Aggregation rules for Summary Dashboard (அறிக்கை) ────────────────────
   const groupedStock = {}
@@ -61,6 +78,15 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
 
   return (
     <div className="animate-fade-in">
+      {printTarget && (
+        <style>{`
+          @media print {
+            ${printTarget === 'stock' ? '.sales-log-card, .reports-stats-grid' : '.stock-report-card, .reports-stats-grid'} {
+              display: none !important;
+            }
+          }
+        `}</style>
+      )}
       <div className="flex-between mb-16">
         <div>
           <h2 style={{ fontSize: '24px', fontWeight: 700 }}>அறிக்கைகள் & கணக்கு</h2>
@@ -102,16 +128,36 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '30px' }}>
         {/* Inventory Summary Report */}
-        <div className="card">
+        <div className="card stock-report-card">
           <div className="flex-between mb-16">
             <div className="card-title" style={{ border: 'none', marginBottom: 0, paddingBottom: 0 }}>சரக்கு இருப்பு அறிக்கை (Inventory Details)</div>
-            <div className="flex" style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '0 10px', width: 250 }}>
-              <Search size={14} color="var(--text-sub)" />
-              <input 
-                type="text" placeholder="Search..." 
-                value={filter} onChange={e => setFilter(e.target.value)}
-                style={{ border: 'none', height: 38, background: 'transparent' }} 
-              />
+            <div className="flex" style={{ gap: 12 }}>
+              <button
+                onClick={handlePrintStock}
+                className="btn flex print-hidden"
+                style={{
+                  backgroundColor: 'var(--gold)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  gap: '6px'
+                }}
+              >
+                <Printer size={14} />
+                <span>PDF-ஆக பதிவிறக்கு (Download PDF)</span>
+              </button>
+              <div className="flex" style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '0 10px', width: 200 }}>
+                <Search size={14} color="var(--text-sub)" />
+                <input 
+                  type="text" placeholder="Search..." 
+                  value={filter} onChange={e => setFilter(e.target.value)}
+                  style={{ border: 'none', height: 38, background: 'transparent', width: '100%' }} 
+                />
+              </div>
             </div>
           </div>
           <div className="table-wrap">
@@ -149,8 +195,28 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
         </div>
 
         {/* Sales Log */}
-        <div className="card">
-          <div className="card-title">விற்பனை வரலாறு (Sales Log)</div>
+        <div className="card sales-log-card">
+          <div className="flex-between mb-16">
+            <div className="card-title" style={{ border: 'none', marginBottom: 0, paddingBottom: 0 }}>விற்பனை வரலாறு (Sales Log)</div>
+            <button
+              onClick={handlePrintSales}
+              className="btn flex print-hidden"
+              style={{
+                backgroundColor: 'var(--gold)',
+                color: 'white',
+                border: 'none',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontWeight: 600,
+                fontSize: '13px',
+                cursor: 'pointer',
+                gap: '6px'
+              }}
+            >
+              <Printer size={14} />
+              <span>PDF-ஆக பதிவிறக்கு (Download PDF)</span>
+            </button>
+          </div>
           <div className="table-wrap">
             <table>
               <thead>

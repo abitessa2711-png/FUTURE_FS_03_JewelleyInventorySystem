@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Receipt, Search, User } from 'lucide-react'
+import { Receipt, Search, User, Printer } from 'lucide-react'
 
 const SoldItems = ({ soldItems = [] }) => {
   const [search, setSearch] = useState('')
@@ -24,6 +24,23 @@ const SoldItems = ({ soldItems = [] }) => {
           <h2 style={{ fontSize: '24px', fontWeight: 700 }}>விற்பனை வரலாறு</h2>
           <p className="text-sub">{filtered.length} transactions · ₹{totalRevenue.toLocaleString('en-IN')} revenue</p>
         </div>
+        <button
+          onClick={() => window.print()}
+          className="btn flex print-hidden"
+          style={{
+            backgroundColor: 'var(--gold)',
+            color: 'white',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '8px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            gap: '8px'
+          }}
+        >
+          <Printer size={16} />
+          <span>விற்பனை அறிக்கை PDF (Download Sales PDF)</span>
+        </button>
       </div>
 
       {/* Filters */}

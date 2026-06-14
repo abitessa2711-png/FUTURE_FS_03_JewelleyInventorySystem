@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Trash2, Search, Filter } from 'lucide-react'
+import { Trash2, Search, Filter, Printer } from 'lucide-react'
 
 const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
   const [searchQuery, setSearchQuery] = useState('')
@@ -38,6 +38,23 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
             Live Stock · {filteredProducts.length} பதிவுகள் · மொத்த எண்ணிக்கை {totalQuantity} pcs · மொத்த எடை {totalWeight.toFixed(3)}g
           </p>
         </div>
+        <button
+          onClick={() => window.print()}
+          className="btn flex print-hidden"
+          style={{
+            backgroundColor: 'var(--gold)',
+            color: 'white',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '8px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            gap: '8px'
+          }}
+        >
+          <Printer size={16} />
+          <span>இருப்பு அறிக்கை PDF (Download Stock PDF)</span>
+        </button>
       </div>
 
       {/* Search and Filter Card */}
