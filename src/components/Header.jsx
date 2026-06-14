@@ -1,8 +1,12 @@
 import React from 'react'
+import { Menu } from 'lucide-react'
 
-const Header = ({ username, onLogout, toggleTheme, theme }) => (
+const Header = ({ username, onLogout, toggleTheme, theme, onMenuClick }) => (
   <header className="app-header">
-    <div className="flex" style={{ gap: 0 }}>
+    <div className="flex" style={{ gap: '12px', alignItems: 'center' }}>
+      <button className="menu-toggle-btn" onClick={onMenuClick} aria-label="Toggle Menu">
+        <Menu size={20} />
+      </button>
       <span className="header-title">TAS Jewellers</span>
       <span className="header-subtitle">நகை வணிக முறைமை</span>
     </div>

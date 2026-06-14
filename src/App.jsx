@@ -18,6 +18,7 @@ export default function App() {
   const [showSignup, setShowSignup] = useState(false)
   const [activeTab, setActiveTab] = useState('dashboard')
   const [theme, setTheme]         = useState(() => localStorage.getItem('tas_theme') || 'dark')
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   // ── Data ───────────────────────────────────────────────────────────────────
   const [products, setProducts]   = useState([])
@@ -377,13 +378,20 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} role={user?.role || 'admin'} />
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        role={user?.role || 'admin'}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
       <div className="app-content">
         <Header
           username={user?.name || 'User'}
           theme={theme}
           toggleTheme={toggleTheme}
           onLogout={handleLogout}
+          onMenuClick={() => setIsSidebarOpen(true)}
         />
         <main className="container animate-fade-in">
           {currentPage}

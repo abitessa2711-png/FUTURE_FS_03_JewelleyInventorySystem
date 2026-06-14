@@ -11,48 +11,54 @@ const MENU = [
   { id: 'reports',   label: 'அறிக்கைகள்',     sub: 'Reports',          icon: <BarChart2 size={17} />,     roles: ['admin'] },
 ]
 
-const Sidebar = ({ activeTab, setActiveTab, role = 'admin' }) => {
+const Sidebar = ({ activeTab, setActiveTab, role = 'admin', isOpen, onClose }) => {
   const visible = MENU.filter(item => item.roles.includes(role.toLowerCase()));
 
   return (
-    <div className="sidebar">
-      <div className="sidebar-brand">
-        <div className="sidebar-brand-dot" />
-        <div>
-          <div className="sidebar-brand-name">TAS Jewellers</div>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>நகை கணக்கு முறைமை</div>
-        </div>
-      </div>
-
-      <nav className="sidebar-nav">
-        {visible.map(item => {
-          const active = activeTab === item.id
-          return (
-            <div
-              key={item.id}
-              className={`nav-item ${active ? 'active' : ''}`}
-              onClick={() => setActiveTab(item.id)}
-            >
-              <span style={{ flexShrink: 0, display: 'flex' }}>{item.icon}</span>
-              <div>
-                <div style={{ fontWeight: active ? 600 : 500 }}>{item.label}</div>
-                <div style={{ fontSize: '11px', opacity: 0.6 }}>{item.sub}</div>
-              </div>
-            </div>
-          )
-        })}
-      </nav>
-
-      <div className="sidebar-footer">
-        <div className="online-dot" />
-        <div>
-          <div style={{ fontWeight: 600, color: 'rgba(255,255,255,0.8)', fontSize: '13px' }}>
-            {role === 'admin' ? 'நிர்வாகி (Admin)' : 'Auditor'}
+    <>
+      {isOpen && <div className="sidebar-overlay" onClick={onClose} />}
+      <div className={`sidebar ${isOpen ? 'open' : ''}`}>
+        <div className="sidebar-brand">
+          <div className="sidebar-brand-dot" />
+          <div>
+            <div className="sidebar-brand-name">TAS Jewellers</div>
+            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>நகை கணக்கு முறைமை</div>
           </div>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Offline Mode</div>
+        </div>
+
+        <nav className="sidebar-nav">
+          {visible.map(item => {
+            const active = activeTab === item.id
+            return (
+              <div
+                key={item.id}
+                className={`nav-item ${active ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveTab(item.id)
+                  if (onClose) onClose()
+                }}
+              >
+                <span style={{ flexShrink: 0, display: 'flex' }}>{item.icon}</span>
+                <div>
+                  <div style={{ fontWeight: active ? 600 : 500 }}>{item.label}</div>
+                  <div style={{ fontSize: '11px', opacity: 0.6 }}>{item.sub}</div>
+                </div>
+              </div>
+            )
+          })}
+        </nav>
+
+        <div className="sidebar-footer">
+          <div className="online-dot" />
+          <div>
+            <div style={{ fontWeight: 600, color: 'rgba(255,255,255,0.8)', fontSize: '13px' }}>
+              {role === 'admin' ? 'நிர்வாகி (Admin)' : 'Auditor'}
+            </div>
+            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Offline Mode</div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
 
