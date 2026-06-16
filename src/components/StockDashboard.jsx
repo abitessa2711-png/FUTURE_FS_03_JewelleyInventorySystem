@@ -65,7 +65,7 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
               onChange={e => setSelectedCategory(e.target.value)}
               className="filter-select"
             >
-              <option value="">— அனைத்து பிரிவுகள் (All Categories) —</option>
+              <option value="">— அனைத்து பிரிவுகள் (All) —</option>
               {categories.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}

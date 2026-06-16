@@ -840,9 +840,12 @@ td { color: var(--text-main); }
 
   /* Form grids */
   .form-grid,
+  .form-grid-2col,
+  .form-grid-cust,
   .app-shell div[style*="grid-template-columns: 1fr 1fr"],
   .app-shell div[style*="grid-template-columns: 1.5fr 1fr"] {
-    grid-template-columns: minmax(0, 1fr) !important;
+    display: flex !important;
+    flex-direction: column !important;
     gap: 12px !important;
   }
 
@@ -856,8 +859,9 @@ td { color: var(--text-main); }
   }
 
   /* Card min-width reset to prevent overflow from wide children */
-  .card {
+  .card, .premium-card {
     min-width: 0 !important;
+    padding: 16px !important;
   }
 
   /* Mobile Typography */
@@ -950,12 +954,8 @@ td { color: var(--text-main); }
     grid-template-columns: minmax(0, 1fr) !important;
     gap: 20px !important;
   }
-  .form-grid-2col,
-  .form-grid-cust {
-    grid-template-columns: minmax(0, 1fr) !important;
-    gap: 12px !important;
-  }
   .grid-span-2 {
     grid-column: span 1 !important;
+    width: 100% !important;
   }
 }
