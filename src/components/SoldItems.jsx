@@ -53,13 +53,13 @@ const SoldItems = ({ soldItems = [] }) => {
             <thead>
               <tr>
                 <th>Date</th>
-                <th>Bill ID</th>
+                <th className="hide-mobile">Bill ID</th>
                 <th>Customer</th>
                 <th>Item</th>
-                <th>Category</th>
+                <th className="hide-mobile">Category</th>
                 <th style={{ textAlign: 'right' }}>Qty | Wt</th>
-                <th style={{ textAlign: 'right' }}>Rate/g</th>
-                <th style={{ textAlign: 'right' }}>Discount</th>
+                <th className="hide-mobile" style={{ textAlign: 'right' }}>Rate/g</th>
+                <th className="hide-mobile" style={{ textAlign: 'right' }}>Discount</th>
                 <th style={{ textAlign: 'right' }}>Total</th>
               </tr>
             </thead>
@@ -69,7 +69,7 @@ const SoldItems = ({ soldItems = [] }) => {
                   <td style={{ fontSize: 12, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>
                     {s.date ? new Date(s.date).toLocaleDateString('en-IN') : '—'}
                   </td>
-                  <td style={{ fontSize: 11, color: 'var(--text-sub)' }}>{s.billId || '—'}</td>
+                  <td className="hide-mobile" style={{ fontSize: 11, color: 'var(--text-sub)' }}>{s.billId || '—'}</td>
                   <td>
                     <div className="fw-600">{s.customerName || 'Walk-in'}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{s.mobile || ''}</div>
@@ -77,11 +77,14 @@ const SoldItems = ({ soldItems = [] }) => {
                   <td>
                     <div className="fw-600">{s.variant}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{s.detail || ''}</div>
+                    <div className="show-mobile" style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: '2px' }}>
+                      {s.category}
+                    </div>
                   </td>
-                  <td style={{ fontSize: 13 }}>{s.category}</td>
+                  <td className="hide-mobile" style={{ fontSize: 13 }}>{s.category}</td>
                   <td style={{ textAlign: 'right', fontSize: 13 }}>{s.quantity || 0} | {s.weight || 0}g</td>
-                  <td style={{ textAlign: 'right', fontSize: 13 }}>₹{s.pricePerGram?.toLocaleString('en-IN') || '—'}</td>
-                  <td style={{ textAlign: 'right', color: '#22C55E', fontSize: 13 }}>₹{s.discountAmount || 0}</td>
+                  <td className="hide-mobile" style={{ textAlign: 'right', fontSize: 13 }}>₹{s.pricePerGram?.toLocaleString('en-IN') || '—'}</td>
+                  <td className="hide-mobile" style={{ textAlign: 'right', color: '#22C55E', fontSize: 13 }}>₹{s.discountAmount || 0}</td>
                   <td style={{ textAlign: 'right' }}>
                     <span className="text-success fw-600">₹{s.total?.toLocaleString('en-IN')}</span>
                   </td>

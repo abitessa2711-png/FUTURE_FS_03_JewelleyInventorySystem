@@ -26,7 +26,7 @@ const Login = ({ onLogin, onShowSignup }) => {
         return
       }
 
-      if (loginId.trim() === 'audit@tas.com' && password === 'audit123') {
+      if (loginId.trim() === 'audit@tas.com' && password === 'audit@tas123') {
         onLogin({
           id: 'audit-bypass-id',
           name: 'TAS Auditor',

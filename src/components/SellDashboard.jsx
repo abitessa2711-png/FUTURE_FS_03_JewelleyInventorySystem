@@ -241,13 +241,23 @@ const SellDashboard = ({ products = [], processSale }) => {
               <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-sub)' }}>பட்டியல் காலியாக உள்ளது</div>
             ) : (
               <table className="cart-table" style={{ width: '100%', fontSize: '13px' }}>
-                <thead><tr><th>Item</th><th style={{ textAlign: 'center' }}>Qty|Wt</th><th style={{ textAlign: 'right' }}>Disc (₹)</th><th style={{ textAlign: 'right' }}>Price</th><th></th></tr></thead>
+                <thead><tr><th>Item</th><th style={{ textAlign: 'center' }}>Qty|Wt</th><th className="hide-mobile" style={{ textAlign: 'right' }}>Disc (₹)</th><th style={{ textAlign: 'right' }}>Price</th><th></th></tr></thead>
                 <tbody>
                   {cart.map((item, idx) => (
                     <tr key={idx}>
-                      <td><div className="fw-600">{item.variant}</div><div style={{ fontSize: 11 }}>{item.detail}</div></td>
+                      <td>
+                        <div className="fw-600">{item.variant}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>
+                          {item.detail}
+                          {parseFloat(item.discountAmount || 0) > 0 && (
+                            <span className="show-mobile" style={{ color: '#22C55E', fontWeight: 600, marginTop: '2px' }}>
+                              · Disc: ₹{item.discountAmount}
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td style={{ textAlign: 'center' }}>{item.quantity} | {item.weight}g</td>
-                      <td style={{ textAlign: 'right' }}>₹{item.discountAmount}</td>
+                      <td className="hide-mobile" style={{ textAlign: 'right' }}>₹{item.discountAmount}</td>
                       <td style={{ textAlign: 'right', fontWeight: 600 }}>₹{item.total.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
                       <td style={{ textAlign: 'right' }}>
                         <button className="btn btn-danger-ghost" style={{ padding: 4 }} onClick={() => setCart(cart.filter((_, i) => i !== idx))}><Trash2 size={14} /></button>

@@ -39,10 +39,10 @@ const BillModal = ({ bill, onClose }) => {
               <thead>
                 <tr>
                   <th style={{ textAlign: 'left' }}>Item Details</th>
-                  <th style={{ textAlign: 'center' }}>Qty</th>
-                  <th style={{ textAlign: 'center' }}>Weight</th>
-                  <th style={{ textAlign: 'right' }}>Rate/g</th>
-                  <th style={{ textAlign: 'right' }}>Discount</th>
+                  <th className="hide-mobile" style={{ textAlign: 'center' }}>Qty</th>
+                  <th className="hide-mobile" style={{ textAlign: 'center' }}>Weight</th>
+                  <th className="hide-mobile" style={{ textAlign: 'right' }}>Rate/g</th>
+                  <th className="hide-mobile" style={{ textAlign: 'right' }}>Discount</th>
                   <th style={{ textAlign: 'right' }}>Total</th>
                 </tr>
               </thead>
@@ -52,11 +52,15 @@ const BillModal = ({ bill, onClose }) => {
                     <td>
                       <div className="fw-600">{item.variant}</div>
                       <div style={{ fontSize: '12px', color: 'var(--text-sub)' }}>{item.category} {item.detail && `- ${item.detail}`}</div>
+                      <div className="show-mobile" style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '4px' }}>
+                        Qty: {item.quantity || 0} | Wt: {item.weight?.toFixed(3)}g | Rate: ₹{item.pricePerGram?.toLocaleString('en-IN')}
+                        {parseFloat(item.discountAmount || 0) > 0 && ` | Disc: -₹${item.discountAmount}`}
+                      </div>
                     </td>
-                    <td style={{ textAlign: 'center' }}>{item.quantity || 0}</td>
-                    <td style={{ textAlign: 'center' }}>{item.weight?.toFixed(3)}g</td>
-                    <td style={{ textAlign: 'right' }}>₹{item.pricePerGram?.toLocaleString('en-IN')}</td>
-                    <td style={{ textAlign: 'right', color: 'var(--danger)' }}>₹{item.discountAmount || 0}</td>
+                    <td className="hide-mobile" style={{ textAlign: 'center' }}>{item.quantity || 0}</td>
+                    <td className="hide-mobile" style={{ textAlign: 'center' }}>{item.weight?.toFixed(3)}g</td>
+                    <td className="hide-mobile" style={{ textAlign: 'right' }}>₹{item.pricePerGram?.toLocaleString('en-IN')}</td>
+                    <td className="hide-mobile" style={{ textAlign: 'right', color: 'var(--danger)' }}>₹{item.discountAmount || 0}</td>
                     <td style={{ textAlign: 'right', fontWeight: 600 }}>₹{item.total?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
                   </tr>
                 ))}
@@ -65,7 +69,7 @@ const BillModal = ({ bill, onClose }) => {
           </div>
 
           {/* Summary Footer */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div className="bill-summary-flex" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div style={{ fontSize: '12px', color: 'var(--text-sub)', width: '50%', lineHeight: '1.6' }}>
               <strong>TERMS & CONDITIONS:</strong><br />
               1. No returns on silver/gold once sold.<br />

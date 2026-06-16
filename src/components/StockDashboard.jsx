@@ -99,17 +99,17 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
         </div>
       ) : (
         <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
-          <div className="table-wrap">
+          <div className="table-wrap" style={{ maxHeight: '550px', overflowY: 'auto' }}>
             <table style={{ borderCollapse: 'collapse', width: '100%' }}>
               <thead>
                 <tr>
-                  <th style={{ width: '60px', textAlign: 'center' }}>வ.எண்</th>
-                  <th>பிரிவு (Category)</th>
+                  <th className="hide-mobile" style={{ width: '60px', textAlign: 'center' }}>வ.எண்</th>
+                  <th className="hide-mobile">பிரிவு (Category)</th>
                   <th>மாடல் / அளவு (Variant / Size)</th>
-                  <th>விவரம் (Detail)</th>
+                  <th className="hide-mobile">விவரம் (Detail)</th>
                   <th style={{ textAlign: 'right' }}>எடை (Weight g)</th>
-                  <th style={{ textAlign: 'center' }}>எண்ணிக்கை (Qty)</th>
-                  <th style={{ textAlign: 'right' }}>மொத்த எடை (Total g)</th>
+                  <th style={{ textAlign: 'center' }}>Qty</th>
+                  <th className="hide-mobile" style={{ textAlign: 'right' }}>மொத்த எடை (Total g)</th>
                   {role === 'admin' && <th style={{ width: '80px', textAlign: 'center' }}>செயல்</th>}
                 </tr>
               </thead>
@@ -118,8 +118,8 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
                   const itemTotalWeight = (item.quantity || 0) * (parseFloat(item.weight) || 0)
                   return (
                     <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ textAlign: 'center', color: 'var(--text-sub)', fontWeight: 500 }}>{idx + 1}</td>
-                      <td>
+                      <td className="hide-mobile" style={{ textAlign: 'center', color: 'var(--text-sub)', fontWeight: 500 }}>{idx + 1}</td>
+                      <td className="hide-mobile">
                         <span style={{
                           background: 'rgba(212, 175, 55, 0.08)',
                           color: 'var(--gold)',
@@ -131,15 +131,25 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
                           {item.category}
                         </span>
                       </td>
-                      <td style={{ fontWeight: 600 }}>{item.variant || item.subcategory || '—'}</td>
-                      <td style={{ color: 'var(--text-sub)' }}>{item.detail || '—'}</td>
+                      <td style={{ fontWeight: 600 }}>
+                        {item.variant || item.subcategory || '—'}
+                        <div className="show-mobile" style={{ fontSize: '11px', color: 'var(--gold)', fontWeight: 'normal', marginTop: '2px' }}>
+                          {item.category}
+                        </div>
+                        {item.detail && (
+                          <div className="show-mobile" style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'normal', marginTop: '2px' }}>
+                            {item.detail}
+                          </div>
+                        )}
+                      </td>
+                      <td className="hide-mobile" style={{ color: 'var(--text-sub)' }}>{item.detail || '—'}</td>
                       <td style={{ textAlign: 'right', fontWeight: 500 }}>
                         {parseFloat(item.weight || 0).toFixed(3)}
                       </td>
                       <td style={{ textAlign: 'center', fontWeight: 600, color: 'var(--gold)' }}>
                         {item.quantity}
                       </td>
-                      <td style={{ textAlign: 'right', fontWeight: 700 }}>
+                      <td className="hide-mobile" style={{ textAlign: 'right', fontWeight: 700 }}>
                         {itemTotalWeight.toFixed(3)}
                       </td>
                       {role === 'admin' && (

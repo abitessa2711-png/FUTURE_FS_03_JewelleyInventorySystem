@@ -58,13 +58,19 @@ const Dashboard = ({ products = [], sales = [], setActiveTab }) => {
           <div className="table-wrap">
             <table>
               <thead>
-                <tr><th>Item</th><th>Category</th><th style={{ textAlign: 'right' }}>Stock Qty | Wt</th></tr>
+                <tr><th>Item</th><th className="hide-mobile">Category</th><th style={{ textAlign: 'right' }}>Stock Qty | Wt</th></tr>
               </thead>
               <tbody>
                 {products.slice(-5).reverse().map(p => (
                   <tr key={p.id}>
-                    <td><div className="fw-600">{p.variant}</div><div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{p.detail}</div></td>
-                    <td>{p.category}</td>
+                    <td>
+                      <div className="fw-600">{p.variant}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{p.detail}</div>
+                      <div className="show-mobile" style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: '2px' }}>
+                        {p.category}
+                      </div>
+                    </td>
+                    <td className="hide-mobile">{p.category}</td>
                     <td style={{ textAlign: 'right' }}><span className="text-gold fw-600">{p.quantity} pcs | {p.weight}g</span></td>
                   </tr>
                 ))}

@@ -114,13 +114,13 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
               />
             </div>
           </div>
-          <div className="table-wrap">
+          <div className="table-wrap" style={{ maxHeight: '400px', overflowY: 'auto' }}>
             <table>
               <thead>
                 <tr>
                   <th>பிரிவு & மாடல் (Category & Variant/Size)</th>
-                  <th>துணை பிரிவு (Subcategory)</th>
-                  <th>விவரம் (Detail)</th>
+                  <th className="hide-mobile">துணை பிரிவு (Subcategory)</th>
+                  <th className="hide-mobile">விவரம் (Detail)</th>
                   <th style={{ textAlign: 'right' }}>இருப்பு (Stock Qty | Weight)</th>
                 </tr>
               </thead>
@@ -130,9 +130,12 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
                     <td>
                       <div className="fw-600">{p.variant}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{p.category}</div>
+                      <div className="show-mobile" style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: '4px' }}>
+                        {p.subcategory && `${p.subcategory} · `}{p.detail || '—'}
+                      </div>
                     </td>
-                    <td>{p.subcategory || '—'}</td>
-                    <td>{p.detail || '—'}</td>
+                    <td className="hide-mobile">{p.subcategory || '—'}</td>
+                    <td className="hide-mobile">{p.detail || '—'}</td>
                     <td style={{ textAlign: 'right' }}>
                       <span className="text-gold fw-600">{p.quantity} pcs | {p.weight}g</span>
                     </td>
@@ -151,14 +154,14 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
         {/* Sales Log */}
         <div className="card">
           <div className="card-title">விற்பனை வரலாறு (Sales Log)</div>
-          <div className="table-wrap">
+          <div className="table-wrap" style={{ maxHeight: '400px', overflowY: 'auto' }}>
             <table>
               <thead>
                 <tr>
                   <th>Customer</th>
                   <th>Item Details</th>
                   <th style={{ textAlign: 'right' }}>Qty | Weight</th>
-                  <th style={{ textAlign: 'right' }}>Rate/g</th>
+                  <th className="hide-mobile" style={{ textAlign: 'right' }}>Rate/g</th>
                   <th style={{ textAlign: 'right' }}>Total</th>
                 </tr>
               </thead>
@@ -166,9 +169,15 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
                 {soldItems.slice(-30).reverse().map((s, i) => (
                   <tr key={i} className="table-row">
                     <td><div className="fw-600">{s.customerName || 'Walk-in'}</div><div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{s.date?.split('T')[0]}</div></td>
-                    <td><div className="fw-600">{s.variant}</div><div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{s.category} {s.detail ? `- ${s.detail}` : ''}</div></td>
+                    <td>
+                      <div className="fw-600">{s.variant}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{s.category} {s.detail ? `- ${s.detail}` : ''}</div>
+                      <div className="show-mobile" style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: '4px' }}>
+                        Rate: ₹{s.pricePerGram?.toLocaleString('en-IN')}/g
+                      </div>
+                    </td>
                     <td style={{ textAlign: 'right' }}>{s.quantity || 0} pcs | {s.weight || 0}g</td>
-                    <td style={{ textAlign: 'right' }}>₹{s.pricePerGram?.toLocaleString('en-IN')}</td>
+                    <td className="hide-mobile" style={{ textAlign: 'right' }}>₹{s.pricePerGram?.toLocaleString('en-IN')}</td>
                     <td style={{ textAlign: 'right' }}><span className="text-success fw-600">₹{s.total?.toLocaleString('en-IN')}</span></td>
                   </tr>
                 ))}

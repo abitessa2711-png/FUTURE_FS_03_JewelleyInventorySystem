@@ -101,7 +101,7 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
                 <tr>
                   <th>பொருள் விவரம்</th>
                   <th style={{ textAlign: 'right' }}>எடை (g)</th>
-                  <th style={{ textAlign: 'right' }}>தேதி</th>
+                  <th className="hide-mobile" style={{ textAlign: 'right' }}>தேதி</th>
                 </tr>
               </thead>
               <tbody>
@@ -116,6 +116,9 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
                         <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>
                           {item.category_name} {item.subcategory_name ? `· ${item.subcategory_name}` : ''}
                         </div>
+                        <div className="show-mobile" style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: '4px' }}>
+                          தேதி: {new Date(item.created_at).toLocaleDateString('en-IN')}
+                        </div>
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 600, color: isSold ? '#EF4444' : 'var(--gold)' }}>
                         {parseFloat(item.weight || 0).toFixed(2)}g
@@ -125,7 +128,7 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
                           </span>
                         )}
                       </td>
-                      <td style={{ textAlign: 'right', fontSize: 11, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>
+                      <td className="hide-mobile" style={{ textAlign: 'right', fontSize: 11, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>
                         {new Date(item.created_at).toLocaleDateString('en-IN')}
                       </td>
                     </tr>
@@ -155,7 +158,7 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
                   <th>பொருள் விவரம்</th>
                   <th style={{ textAlign: 'right' }}>எடை (g)</th>
                   <th style={{ textAlign: 'right' }}>விற்பனை தொகை</th>
-                  <th style={{ textAlign: 'right' }}>தேதி</th>
+                  <th className="hide-mobile" style={{ textAlign: 'right' }}>தேதி</th>
                 </tr>
               </thead>
               <tbody>
@@ -168,6 +171,9 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
                         <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>
                           {item.category_name} {item.subcategory_name ? `· ${item.subcategory_name}` : ''}
                         </div>
+                        <div className="show-mobile" style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: '4px' }}>
+                          தேதி: {new Date(item.created_at).toLocaleDateString('en-IN')}
+                        </div>
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 600 }}>
                         {parseFloat(item.weight || 0).toFixed(2)}g
@@ -175,7 +181,7 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
                       <td style={{ textAlign: 'right', fontWeight: 600 }}>
                         {sellAmt !== undefined ? `₹${sellAmt.toLocaleString('en-IN')}` : '—'}
                       </td>
-                      <td style={{ textAlign: 'right', fontSize: 11, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>
+                      <td className="hide-mobile" style={{ textAlign: 'right', fontSize: 11, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>
                         {new Date(item.created_at).toLocaleDateString('en-IN')}
                       </td>
                     </tr>

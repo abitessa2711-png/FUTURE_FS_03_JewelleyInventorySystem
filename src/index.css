@@ -5,21 +5,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  /* ELEGANT LIGHT THEME – refined navy & soft gold */
-  --bg:        #F5F7FA; /* Very light slate‑blue background */
-  --card:      #FFFFFF;
+  /* PREMIUM PLUM & GOLD THEME */
+  --bg:        radial-gradient(circle at 10% 20%, rgba(160, 14, 85, 0.25) 0%, transparent 60%), radial-gradient(circle at 90% 80%, rgba(197, 160, 94, 0.2) 0%, transparent 60%), radial-gradient(circle at 50% 50%, rgba(97, 11, 69, 0.35) 0%, transparent 80%), #12010E;
+  --card:      rgba(37, 5, 29, 0.65);
   --gold:      #C5A05E; /* Soft, muted gold for premium feel */
   --gold-dim:  #A07B44;
-  --accent:    #0055B7; /* Deep navy accent for buttons/links */
-  --text-main: #1F2937; /* Dark slate for primary text */
-  --text-sub:  #4B5563; /* Medium gray for secondary text */
-  --border:    #D1D5DB; /* Light gray borders */
-  --sidebar-bg: #1E293B; /* Keep existing dark sidebar for contrast */
+  --accent:    #C5A05E; /* Gold accent for buttons/links */
+  --text-main: #F8FAFC; /* Light gray/white text */
+  --text-sub:  #A78B9F; /* Soft muted plum/gray text */
+  --border:    rgba(197, 160, 94, 0.25); /* Gold tinted borders */
+  --sidebar-bg: #15020F; /* Dark plum sidebar background */
   --sidebar-text: #F8FAFC;
-  --success:   #16A34A;
-  --danger:    #DC2626;
-  --shadow:    0 1px 3px rgba(0,0,0,0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+  --success:   #00A86B; /* Emerald green */
+  --danger:    #E0115F; /* Ruby red */
+  --shadow:    0 8px 32px rgba(0,0,0,0.4);
+  --shadow-lg: 0 20px 40px -5px rgba(0,0,0,0.6);
 }
 
 
@@ -83,6 +83,8 @@ body {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-right: 1px solid var(--border);
+  position: sticky;
+  top: 0;
 }
 
 .sidebar-brand {
@@ -351,7 +353,7 @@ select option {
 .btn-gold { background: var(--gold); color: #1A1A1A; }
 .btn-add  { background: var(--success); color: white; }
 .btn-sell { background: var(--danger); color: white; }
-.btn-primary { background: #1D4ED8; color: white; }
+.btn-primary { background: linear-gradient(135deg, #AA7C11 0%, #F3E5AB 50%, #AA7C11 100%); color: #1a0212; font-weight: 700; }
 .btn-ghost { background: transparent; color: var(--text-sub); border: 1px solid var(--border); }
 
 .btn-lg { height: 45px; padding: 0 24px; font-size: 15px; border-radius: 10px; }
@@ -396,13 +398,33 @@ th, td {
 }
 
 th {
-  background: var(--bg);
+  background: #12010E;
   font-weight: 600;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text-sub);
   white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 2px solid var(--border);
+}
+
+/* Premium styled scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(212, 175, 55, 0.02);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.2);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 175, 55, 0.45);
 }
 
 tbody tr:hover { background: rgba(212,175,55,0.04); }
@@ -556,6 +578,7 @@ td { color: var(--text-main); }
 .gap-12 { gap: 12px; }
 .flex   { display: flex; align-items: center; }
 .flex-between { display: flex; align-items: center; justify-content: space-between; }
+.show-mobile { display: none; }
 
 /* ======== SCROLLBAR ======== */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -761,10 +784,18 @@ td { color: var(--text-main); }
     font-size: 13px !important;
   }
 
+  .hide-mobile {
+    display: none !important;
+  }
+  .show-mobile {
+    display: block !important;
+  }
+
   /* Table styling on mobile to fit all columns via horizontal scrolling */
   .table-wrap table {
     font-size: 12px !important;
-    min-width: 600px !important; /* Force table to stay wide enough to scroll horizontally */
+    min-width: auto !important; /* Revert the forced min-width to avoid horizontal scrolling */
+    width: 100% !important;
   }
 
   .table-wrap th, 
@@ -797,5 +828,15 @@ td { color: var(--text-main); }
   .bill-container {
     padding: 0;
     overflow-x: auto;
+  }
+
+  /* Responsive flex stacking for bill modal footer */
+  .bill-summary-flex {
+    flex-direction: column-reverse !important;
+    align-items: stretch !important;
+    gap: 20px !important;
+  }
+  .bill-summary-flex > div {
+    width: 100% !important;
   }
 }
