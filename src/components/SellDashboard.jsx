@@ -125,11 +125,11 @@ const SellDashboard = ({ products = [], processSale }) => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px' }}>
+      <div className="sell-layout-grid">
         {/* Sale Form */}
         <div className="card">
           <div className="card-title">பொருள் தேர்வு (Item Selection)</div>
-          <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+          <div className="form-grid form-grid-2col">
             <div className="form-group">
               <label>பிரிவு (Category)</label>
               <select value={formData.category} onChange={e => {
@@ -150,7 +150,7 @@ const SellDashboard = ({ products = [], processSale }) => {
                 {getSubs().map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
-            <div className="form-group" style={{ gridColumn: 'span 2' }}>
+            <div className="form-group grid-span-2">
               <label>மாடல் (Variant)</label>
               <select value={formData.variant} onChange={e => {
                 setFormData({ ...formData, variant: e.target.value, detail: '' })
@@ -161,7 +161,7 @@ const SellDashboard = ({ products = [], processSale }) => {
               </select>
             </div>
 
-            <div className="form-group" style={{ gridColumn: 'span 2' }}>
+            <div className="form-group grid-span-2">
               <label>இருப்புத் தெரிவு (Select Specific Stock) <span style={{ color: 'red' }}>*</span></label>
               <select value={selectedStockId} onChange={e => {
                 const id = e.target.value;
@@ -200,7 +200,7 @@ const SellDashboard = ({ products = [], processSale }) => {
               <label>Discount (₹)</label>
               <input type="number" placeholder="0" value={formData.discountAmt} onChange={e => setFormData({ ...formData, discountAmt: e.target.value })} />
             </div>
-            <div className="form-group" style={{ gridColumn: 'span 2' }}>
+            <div className="form-group grid-span-2">
               <label>GST (₹)</label>
               <input type="number" placeholder="0" value={formData.gstAmt} onChange={e => setFormData({ ...formData, gstAmt: e.target.value })} />
             </div>
@@ -225,7 +225,7 @@ const SellDashboard = ({ products = [], processSale }) => {
         <div className="card">
           <div className="card-title">விற்பனைப் பட்டியல் (Cart)</div>
           
-          <div className="form-grid mb-16" style={{ gridTemplateColumns: '1.5fr 1fr' }}>
+          <div className="form-grid form-grid-cust mb-16">
             <div className="form-group">
               <label><User size={12} /> வாடிக்கையாளர் பெயர்</label>
               <input type="text" placeholder="Name" value={customer.name} onChange={e => setCustomer({ ...customer, name: e.target.value })} />

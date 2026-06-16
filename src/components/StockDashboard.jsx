@@ -42,9 +42,9 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
 
       {/* Search and Filter Card */}
       <div className="card mb-16" style={{ padding: '16px' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-          <div style={{ position: 'relative', flex: '1 1 250px' }}>
-            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-sub)' }}>
+        <div className="search-filter-belt">
+          <div className="search-input-wrap">
+            <span className="search-icon">
               <Search size={16} />
             </span>
             <input
@@ -52,37 +52,18 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
               placeholder="மாடல், அளவு அல்லது விவரம் மூலம் தேடுங்கள்..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '10px 12px 10px 38px',
-                borderRadius: '8px',
-                border: '1px solid var(--border)',
-                background: 'var(--bg)',
-                color: 'var(--text-main)',
-                fontSize: '14px',
-                outline: 'none',
-                boxSizing: 'border-box'
-              }}
+              className="search-input"
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '0 0 auto' }}>
-            <span style={{ color: 'var(--text-sub)', display: 'flex', alignItems: 'center' }}>
+          <div className="filter-select-wrap">
+            <span className="filter-icon">
               <Filter size={16} />
             </span>
             <select
               value={selectedCategory}
               onChange={e => setSelectedCategory(e.target.value)}
-              style={{
-                padding: '10px 14px',
-                borderRadius: '8px',
-                border: '1px solid var(--border)',
-                background: 'var(--bg)',
-                color: 'var(--text-main)',
-                fontSize: '14px',
-                outline: 'none',
-                cursor: 'pointer'
-              }}
+              className="filter-select"
             >
               <option value="">— அனைத்து பிரிவுகள் (All Categories) —</option>
               {categories.map(cat => (
