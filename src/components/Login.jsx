@@ -65,20 +65,20 @@ const Login = ({ onLogin, onShowSignup }) => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'radial-gradient(circle at 20% 30%, rgba(226, 27, 121, 0.12), transparent 45%), radial-gradient(circle at 80% 70%, rgba(79, 30, 130, 0.15), transparent 45%), #0A0F1D',
+      background: 'radial-gradient(circle at 20% 20%, rgba(160, 14, 85, 0.35) 0%, transparent 60%), radial-gradient(circle at 80% 80%, rgba(197, 160, 94, 0.25) 0%, transparent 60%), radial-gradient(circle at 50% 50%, rgba(97, 11, 69, 0.4) 0%, transparent 80%), #15020F',
       fontFamily: "'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       position: 'relative',
       overflow: 'hidden'
     }}>
       <style>{`
         .auth-card {
-          background: rgba(15, 23, 42, 0.45);
+          background: rgba(45, 8, 36, 0.45);
           backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(197, 160, 94, 0.3);
           width: 380px;
           padding: 40px;
           border-radius: 24px;
-          box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+          box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 15px rgba(197, 160, 94, 0.05);
           color: white;
           text-align: center;
           position: relative;
@@ -100,8 +100,8 @@ const Login = ({ onLogin, onShowSignup }) => {
           padding: 14px 16px;
           margin-top: 18px;
           border-radius: 12px;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          background: rgba(15, 23, 42, 0.5);
+          border: 1px solid rgba(197, 160, 94, 0.2);
+          background: rgba(31, 4, 23, 0.5);
           color: white;
           font-size: 14px;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -109,9 +109,9 @@ const Login = ({ onLogin, onShowSignup }) => {
           box-sizing: border-box;
         }
         .auth-input:focus {
-          border-color: #E21B79;
-          box-shadow: 0 0 12px rgba(226, 27, 121, 0.25);
-          background: rgba(15, 23, 42, 0.7);
+          border-color: #C5A05E;
+          box-shadow: 0 0 12px rgba(197, 160, 94, 0.3);
+          background: rgba(31, 4, 23, 0.7);
         }
         .auth-btn {
           margin-top: 28px;
@@ -119,18 +119,18 @@ const Login = ({ onLogin, onShowSignup }) => {
           padding: 14px;
           border-radius: 12px;
           border: none;
-          background: linear-gradient(135deg, #E21B79 0%, #4F1E82 100%);
-          color: white;
-          font-weight: 600;
+          background: linear-gradient(135deg, #AA7C11 0%, #F3E5AB 50%, #AA7C11 100%);
+          color: #1a0212;
+          font-weight: 700;
           font-size: 15px;
           letter-spacing: 0.5px;
           cursor: pointer;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 0 4px 15px rgba(226, 27, 121, 0.3);
+          box-shadow: 0 4px 15px rgba(197, 160, 94, 0.3);
         }
         .auth-btn:hover {
           transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(226, 27, 121, 0.45);
+          box-shadow: 0 8px 25px rgba(197, 160, 94, 0.45);
           filter: brightness(1.1);
         }
         .auth-btn:active {
@@ -139,14 +139,14 @@ const Login = ({ onLogin, onShowSignup }) => {
         .signup-link {
           margin-top: 20px;
           display: block;
-          color: #94A3B8;
+          color: #C5A05E;
           text-decoration: none;
           font-size: 13px;
           cursor: pointer;
           transition: color 0.2s;
         }
         .signup-link:hover {
-          color: #E21B79;
+          color: #E6C280;
         }
       `}</style>
 
@@ -155,7 +155,7 @@ const Login = ({ onLogin, onShowSignup }) => {
           <img src={logoImg} alt="TAS Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
         <h1 style={{ fontSize: '26px', fontWeight: 'bold', color: 'white', marginBottom: '4px', letterSpacing: '0.5px' }}>TAS Jewellers</h1>
-        <p style={{ color: '#94A3B8', fontSize: '13px', marginBottom: '24px' }}>நகை கணக்கு முறைமை</p>
+        <p style={{ color: '#C5A05E', fontSize: '13px', marginBottom: '24px' }}>நகை கணக்கு முறைமை</p>
 
         <form onSubmit={handleLogin}>
           <input 
@@ -167,7 +167,7 @@ const Login = ({ onLogin, onShowSignup }) => {
             value={password} onChange={e => setPassword(e.target.value)} required 
           />
           
-          {error && <p style={{ color: '#F87171', fontSize: '13px', marginTop: '12px' }}>{error}</p>}
+          {error && <p style={{ color: '#E0115F', fontSize: '13px', marginTop: '12px' }}>{error}</p>}
 
           <button type="submit" className="auth-btn" disabled={loading}>
             {loading ? 'சரிபார்க்கிறது...' : 'உள்நுழைக'}
