@@ -104,13 +104,33 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
               <thead>
                 <tr>
                   <th className="hide-mobile" style={{ width: '60px', textAlign: 'center' }}>வ.எண்</th>
-                  <th className="hide-mobile">பிரிவு (Category)</th>
-                  <th>மாடல் / அளவு (Variant / Size)</th>
-                  <th className="hide-mobile">விவரம் (Detail)</th>
-                  <th style={{ textAlign: 'right' }}>எடை (Weight g)</th>
+                  <th className="hide-mobile">
+                    பிரிவு<br />
+                    <span style={{ fontSize: '10px', opacity: 0.7, fontWeight: 'normal', textTransform: 'none' }}>Category</span>
+                  </th>
+                  <th>
+                    மாடல் / அளவு<br />
+                    <span style={{ fontSize: '10px', opacity: 0.7, fontWeight: 'normal', textTransform: 'none' }}>Variant / Size</span>
+                  </th>
+                  <th className="hide-mobile">
+                    விவரம்<br />
+                    <span style={{ fontSize: '10px', opacity: 0.7, fontWeight: 'normal', textTransform: 'none' }}>Detail</span>
+                  </th>
+                  <th style={{ textAlign: 'right' }}>
+                    எடை<br />
+                    <span style={{ fontSize: '10px', opacity: 0.7, fontWeight: 'normal', textTransform: 'none' }}>Weight g</span>
+                  </th>
                   <th style={{ textAlign: 'center' }}>Qty</th>
-                  <th className="hide-mobile" style={{ textAlign: 'right' }}>மொத்த எடை (Total g)</th>
-                  {role === 'admin' && <th style={{ width: '80px', textAlign: 'center' }}>செயல்</th>}
+                  <th className="hide-mobile" style={{ textAlign: 'right' }}>
+                    மொத்த எடை<br />
+                    <span style={{ fontSize: '10px', opacity: 0.7, fontWeight: 'normal', textTransform: 'none' }}>Total g</span>
+                  </th>
+                  {role === 'admin' && (
+                    <th style={{ width: '80px', textAlign: 'center' }}>
+                      செயல்<br />
+                      <span style={{ fontSize: '10px', opacity: 0.7, fontWeight: 'normal', textTransform: 'none' }}>Action</span>
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>

@@ -118,10 +118,22 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
             <table>
               <thead>
                 <tr>
-                  <th>பிரிவு & மாடல் (Category & Variant/Size)</th>
-                  <th className="hide-mobile">துணை பிரிவு (Subcategory)</th>
-                  <th className="hide-mobile">விவரம் (Detail)</th>
-                  <th style={{ textAlign: 'right' }}>இருப்பு (Stock Qty | Weight)</th>
+                  <th>
+                    பிரிவு & மாடல்<br />
+                    <span style={{ fontSize: '10px', opacity: 0.7, fontWeight: 'normal', textTransform: 'none' }}>Category & Variant/Size</span>
+                  </th>
+                  <th className="hide-mobile">
+                    துணை பிரிவு<br />
+                    <span style={{ fontSize: '10px', opacity: 0.7, fontWeight: 'normal', textTransform: 'none' }}>Subcategory</span>
+                  </th>
+                  <th className="hide-mobile">
+                    விவரம்<br />
+                    <span style={{ fontSize: '10px', opacity: 0.7, fontWeight: 'normal', textTransform: 'none' }}>Detail</span>
+                  </th>
+                  <th style={{ textAlign: 'right' }}>
+                    இருப்பு<br />
+                    <span style={{ fontSize: '10px', opacity: 0.7, fontWeight: 'normal', textTransform: 'none' }}>Stock Qty | Weight</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
