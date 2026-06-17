@@ -20,7 +20,7 @@ const AddStock = ({ onAddProduct }) => {
   }
 
   const getDetails = () => {
-    if (formData.category === 'கொலுசு' && formData.subcategory === 'அளவு' && formData.variant) {
+    if (formData.category === 'கொலுசு' && (formData.subcategory === 'அளவு' || formData.subcategory === 'சிங்கிள் பட்டி கொலுசு') && formData.variant) {
       return MASTER_DATA['கொலுசு']['விவரம்'][formData.variant] || []
     }
     return []
