@@ -9,7 +9,7 @@ const SellDashboard = ({ products = [], processSale }) => {
   const [formData, setFormData] = useState({
     category: '', subcategory: '', variant: '', detail: '', weight: '', quantity: '', rate: '', discountAmt: '', gstAmt: ''
   })
-  const [customer, setCustomer] = useState({ name: 'Walk-in', mobile: '' })
+  const [customer, setCustomer] = useState({ name: '', mobile: '' })
   const [cart, setCart] = useState([])
   const [loading, setLoading] = useState(false)
   const [showBill, setShowBill] = useState(null)
@@ -33,12 +33,15 @@ const SellDashboard = ({ products = [], processSale }) => {
 
   const availableStock = products.find(p => p.id === parseInt(selectedStockId))
 
-  const finalItemTotal = parseFloat(formData.rate || 0)
+  const weight = parseFloat(formData.weight || 0)
+  const rate = parseFloat(formData.rate || 0)
+  const finalItemTotal = weight * rate
 
   const addToCart = () => {
     const w = parseFloat(formData.weight || 0)
     const q = parseInt(formData.quantity || 0)
-    const totalRate = parseFloat(formData.rate || 0)
+    const r = parseFloat(formData.rate)
+    const dAmt = parseFloat(formData.discountAmt || 0)
     const gAmt = parseFloat(formData.gstAmt || 0)
     
     if (!selectedStockId || !availableStock) {
@@ -49,8 +52,8 @@ const SellDashboard = ({ products = [], processSale }) => {
       alert('எடை அல்லது எண்ணிக்கை தேவை')
       return
     }
-    if (isNaN(totalRate) || totalRate <= 0) {
-      alert('விற்பனை விலை கட்டாயம்')
+    if (isNaN(r) || r <= 0) {
+      alert('விலை/g கட்டாயம்')
       return
     }
 
@@ -65,23 +68,23 @@ const SellDashboard = ({ products = [], processSale }) => {
       }
     }
 
-    const pricePerGram = w > 0 ? (totalRate / w) : 0
-    const total = totalRate + gAmt
+    const sub = w * r
+    const total = sub - dAmt + gAmt
 
     setCart([...cart, { 
       ...formData, 
       productId: availableStock.id,
       weight: w, 
       quantity: q,
-      pricePerGram: pricePerGram,
-      subtotal: totalRate,
-      discountAmount: 0,
+      pricePerGram: r,
+      subtotal: sub,
+      discountAmount: dAmt,
       gstAmount: gAmt,
       total: total 
     }])
     
     // Reset selection part
-    setFormData({ ...formData, weight: '', quantity: '', rate: '', discountAmt: '', gstAmt: '' })
+    setFormData({ ...formData, weight: '', quantity: '', rate: '', discountAmt: '' })
     setSelectedStockId('')
   }
 
@@ -93,7 +96,7 @@ const SellDashboard = ({ products = [], processSale }) => {
       setShowBill(bill)
       setLastBill(bill)
       setCart([])
-      setCustomer({ name: 'Walk-in', mobile: '' })
+      setCustomer({ name: '', mobile: '' })
     } catch (err) {
       alert('விற்பனை பிழை: ' + err.message)
     } finally {
@@ -220,11 +223,15 @@ const SellDashboard = ({ products = [], processSale }) => {
             </div>
             
             <div className="form-group">
-              <label>விற்பனை விலை (Sell Price) <span style={{ color: 'red' }}>*</span></label>
-              <input type="number" placeholder="Enter Total Price" value={formData.rate} onChange={e => setFormData({ ...formData, rate: e.target.value })} style={{ fontSize: '18px', fontWeight: 700 }} />
+              <label>விலை/g (Rate/g) <span style={{ color: 'red' }}>*</span></label>
+              <input type="number" placeholder="Enter Rate" value={formData.rate} onChange={e => setFormData({ ...formData, rate: e.target.value })} style={{ fontSize: '18px', fontWeight: 700 }} />
             </div>
             
             <div className="form-group">
+              <label>Discount (₹)</label>
+              <input type="number" placeholder="0" value={formData.discountAmt} onChange={e => setFormData({ ...formData, discountAmt: e.target.value })} />
+            </div>
+            <div className="form-group grid-span-2">
               <label>GST (₹)</label>
               <input type="number" placeholder="0" value={formData.gstAmt} onChange={e => setFormData({ ...formData, gstAmt: e.target.value })} />
             </div>
@@ -248,21 +255,40 @@ const SellDashboard = ({ products = [], processSale }) => {
         {/* Cart & Customer */}
         <div className="card">
           <div className="card-title">விற்பனைப் பட்டியல் (Cart)</div>
+          
+          <div className="form-grid form-grid-cust mb-16">
+            <div className="form-group">
+              <label><User size={12} /> வாடிக்கையாளர் பெயர்</label>
+              <input type="text" placeholder="Name" value={customer.name} onChange={e => setCustomer({ ...customer, name: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label>மொபைல்</label>
+              <input type="text" placeholder="Mobile" value={customer.mobile} onChange={e => setCustomer({ ...customer, mobile: e.target.value })} />
+            </div>
+          </div>
 
           <div style={{ minHeight: '200px', border: '1px solid var(--border)', borderRadius: 10, padding: '10px', background: 'rgba(0,0,0,0.01)', overflowY: 'auto', marginBottom: '15px' }}>
             {cart.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-sub)' }}>பட்டியல் காலியாக உள்ளது</div>
             ) : (
               <table className="cart-table" style={{ width: '100%', fontSize: '13px' }}>
-                <thead><tr><th>Item</th><th style={{ textAlign: 'center' }}>Qty|Wt</th><th style={{ textAlign: 'right' }}>Price</th><th></th></tr></thead>
+                <thead><tr><th>Item</th><th style={{ textAlign: 'center' }}>Qty|Wt</th><th className="hide-mobile" style={{ textAlign: 'right' }}>Disc (₹)</th><th style={{ textAlign: 'right' }}>Price</th><th></th></tr></thead>
                 <tbody>
                   {cart.map((item, idx) => (
                     <tr key={idx}>
                       <td>
                         <div className="fw-600">{item.variant}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{item.detail}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>
+                          {item.detail}
+                          {parseFloat(item.discountAmount || 0) > 0 && (
+                            <span className="show-mobile" style={{ color: '#22C55E', fontWeight: 600, marginTop: '2px' }}>
+                              · Disc: ₹{item.discountAmount}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td style={{ textAlign: 'center' }}>{item.quantity} | {item.weight}g</td>
+                      <td className="hide-mobile" style={{ textAlign: 'right' }}>₹{item.discountAmount}</td>
                       <td style={{ textAlign: 'right', fontWeight: 600 }}>₹{item.total.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
                       <td style={{ textAlign: 'right' }}>
                         <button className="btn btn-danger-ghost" style={{ padding: 4 }} onClick={() => setCart(cart.filter((_, i) => i !== idx))}><Trash2 size={14} /></button>
