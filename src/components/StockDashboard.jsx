@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Trash2, Search, Filter } from 'lucide-react'
 
 const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
@@ -21,6 +21,34 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
   const variants = (selectedCategory && selectedSubcategory)
     ? [...new Set(availableProducts.filter(p => p.category === selectedCategory && p.subcategory === selectedSubcategory).map(p => p.variant).filter(Boolean))].sort()
     : []
+
+  // Auto-resolve subcategory when there is only 1 option
+  useEffect(() => {
+    if (selectedCategory) {
+      const subs = [...new Set(availableProducts.filter(p => p.category === selectedCategory).map(p => p.subcategory).filter(Boolean))].sort()
+      if (subs.length === 1) {
+        setSelectedSubcategory(subs[0])
+      } else if (!subs.includes(selectedSubcategory)) {
+        setSelectedSubcategory('')
+      }
+    } else {
+      setSelectedSubcategory('')
+    }
+  }, [selectedCategory, availableProducts])
+
+  // Auto-resolve variant when there is only 1 option
+  useEffect(() => {
+    if (selectedCategory && selectedSubcategory) {
+      const vars = [...new Set(availableProducts.filter(p => p.category === selectedCategory && p.subcategory === selectedSubcategory).map(p => p.variant).filter(Boolean))].sort()
+      if (vars.length === 1) {
+        setSelectedVariant(vars[0])
+      } else if (!vars.includes(selectedVariant)) {
+        setSelectedVariant('')
+      }
+    } else {
+      setSelectedVariant('')
+    }
+  }, [selectedCategory, selectedSubcategory, availableProducts])
 
   // Filter products based on search query and selected category, subcategory, and variant
   const filteredProducts = availableProducts.filter(p => {
@@ -100,45 +128,49 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
           </div>
 
           {/* Subcategory Filter */}
-          <div className="filter-select-wrap" style={{ margin: 0, width: '100%', opacity: selectedCategory ? 1 : 0.6 }}>
-            <span className="filter-icon">
-              <Filter size={16} />
-            </span>
-            <select
-              value={selectedSubcategory}
-              onChange={e => {
-                setSelectedSubcategory(e.target.value)
-                setSelectedVariant('')
-              }}
-              disabled={!selectedCategory}
-              className="filter-select"
-              style={{ width: '100%' }}
-            >
-              <option value="">— துணை பிரிவு (All Subcategory) —</option>
-              {subcategories.map(sub => (
-                <option key={sub} value={sub}>{sub}</option>
-              ))}
-            </select>
-          </div>
+          {subcategories.length > 1 && (
+            <div className="filter-select-wrap" style={{ margin: 0, width: '100%', opacity: selectedCategory ? 1 : 0.6 }}>
+              <span className="filter-icon">
+                <Filter size={16} />
+              </span>
+              <select
+                value={selectedSubcategory}
+                onChange={e => {
+                  setSelectedSubcategory(e.target.value)
+                  setSelectedVariant('')
+                }}
+                disabled={!selectedCategory}
+                className="filter-select"
+                style={{ width: '100%' }}
+              >
+                <option value="">— துணை பிரிவு (All Subcategory) —</option>
+                {subcategories.map(sub => (
+                  <option key={sub} value={sub}>{sub}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Variant Filter */}
-          <div className="filter-select-wrap" style={{ margin: 0, width: '100%', opacity: (selectedCategory && selectedSubcategory) ? 1 : 0.6 }}>
-            <span className="filter-icon">
-              <Filter size={16} />
-            </span>
-            <select
-              value={selectedVariant}
-              onChange={e => setSelectedVariant(e.target.value)}
-              disabled={!selectedCategory || !selectedSubcategory}
-              className="filter-select"
-              style={{ width: '100%' }}
-            >
-              <option value="">— மாதிரி / வகை (All Variant) —</option>
-              {variants.map(v => (
-                <option key={v} value={v}>{v}</option>
-              ))}
-            </select>
-          </div>
+          {variants.length > 1 && (
+            <div className="filter-select-wrap" style={{ margin: 0, width: '100%', opacity: (selectedCategory && selectedSubcategory) ? 1 : 0.6 }}>
+              <span className="filter-icon">
+                <Filter size={16} />
+              </span>
+              <select
+                value={selectedVariant}
+                onChange={e => setSelectedVariant(e.target.value)}
+                disabled={!selectedCategory || !selectedSubcategory}
+                className="filter-select"
+                style={{ width: '100%' }}
+              >
+                <option value="">— மாதிரி / வகை (All Variant) —</option>
+                {variants.map(v => (
+                  <option key={v} value={v}>{v}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
         </div>
       </div>

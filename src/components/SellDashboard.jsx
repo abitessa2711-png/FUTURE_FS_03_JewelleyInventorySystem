@@ -28,9 +28,11 @@ const SellDashboard = ({ products = [], processSale }) => {
   }
 
   // Helper to determine product category emoji for premium look
+  // Helper to determine product category emoji for premium look
   const getCategoryEmoji = (cat) => {
-    if (cat?.toLowerCase().includes('gold') || cat?.toLowerCase().includes('தங்கம்')) return '🟡'
-    if (cat?.toLowerCase().includes('silver') || cat?.toLowerCase().includes('வெள்ளி')) return '⚪'
+    const c = (cat || '').toLowerCase()
+    if (c.includes('gold') || c.includes('தங்கம்')) return '🟡'
+    if (c.includes('silver') || c.includes('வெள்ளி') || c.includes('கொலுசு') || c.includes('மெட்டி') || c.includes('தண்டை') || c.includes('வளையல்') || c.includes('திருகு') || c.includes('கொடி') || c.includes('டாலர்') || c.includes('தாயத்து') || c.includes('கம்மல்') || c.includes('மோதிரம்') || c.includes('காயின்') || c.includes('காப்பு') || c.includes('செயின்') || c.includes('பாத்திரங்கள்')) return '⚪'
     return '📦'
   }
 
