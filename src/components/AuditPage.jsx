@@ -67,53 +67,6 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
     return (a.detail || '').localeCompare(b.detail || '')
   })
 
-  // 1. Group all actual sales from soldItems (which contains total amount) chronologically
-  const salesPoolForSell = {}
-  const sortedSales = [...(soldItems || [])].sort((a, b) => new Date(a.date) - new Date(b.date))
-  
-  sortedSales.forEach(sale => {
-    const key = `${sale.category}||${sale.subcategory || ''}||${sale.variant || ''}||${parseFloat(sale.weight).toFixed(2)}`
-    if (!salesPoolForSell[key]) salesPoolForSell[key] = []
-    salesPoolForSell[key].push(sale.total)
-  })
-
-  // 2. Track consumption indices for matching ledger SELL entries
-  const sellIndices = {}
-  const sellAmounts = {}
-  const sortedSoldEntries = [...soldEntries].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-  
-  sortedSoldEntries.forEach(item => {
-    const key = `${item.category_name}||${item.subcategory_name || ''}||${item.variant_name || ''}||${parseFloat(item.weight).toFixed(2)}`
-    if (salesPoolForSell[key]) {
-      const idx = sellIndices[key] || 0
-      if (idx < salesPoolForSell[key].length) {
-        sellAmounts[item.id] = salesPoolForSell[key][idx]
-        sellIndices[key] = idx + 1
-      }
-    }
-  })
-
-  // 3. Track matching for addedItems
-  const soldPool = {}
-  soldEntries.forEach(s => {
-    const key = `${s.category_name}||${s.subcategory_name || ''}||${s.variant_name || ''}||${parseFloat(s.weight).toFixed(2)}`
-    soldPool[key] = (soldPool[key] || 0) + parseFloat(s.weight)
-  })
-
-  const matchedAddIds = new Set()
-  // Sort additions oldest-first to consume matching sales chronologically
-  const sortedAdds = [...addedItems].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-  
-  sortedAdds.forEach(a => {
-    const key = `${a.category_name}||${a.subcategory_name || ''}||${a.variant_name || ''}||${parseFloat(a.weight).toFixed(2)}`
-    const weightToMatch = parseFloat(a.weight)
-    
-    if (soldPool[key] && soldPool[key] >= weightToMatch - 0.001) {
-      matchedAddIds.add(a.id)
-      soldPool[key] -= weightToMatch
-    }
-  })
-
   const cardStyle = {
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
     textAlign: 'center', gap: '12px'
