@@ -6,6 +6,7 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
     const saved = localStorage.getItem('manually_audited_ledger_ids')
     return saved ? new Set(JSON.parse(saved)) : new Set()
   })
+  const [searchQuery, setSearchQuery] = useState('')
 
   const toggleAuditStatus = (id) => {
     const newSet = new Set(auditedIds)
@@ -19,7 +20,7 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
   }
 
   const totalQuantity = (products || []).reduce((sum, p) => sum + (parseInt(p.quantity, 10) || 0), 0)
-  const totalWeight = (products || []).reduce((sum, p) => sum + (parseFloat(p.weight) || 0), 0)
+  const totalWeight = (products || []).reduce((sum, p) => sum + ((parseInt(p.quantity, 10) || 0) * (parseFloat(p.weight) || 0)), 0)
   const totalSold = (soldItems || []).reduce((sum, s) => sum + (parseInt(s.quantity, 10) || 0), 0)
 
   // Calculate category-wise split
@@ -30,12 +31,41 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
       categorySplit[cat] = { qty: 0, weight: 0 }
     }
     categorySplit[cat].qty += (parseInt(p.quantity, 10) || 0)
-    categorySplit[cat].weight += (parseFloat(p.weight) || 0)
+    categorySplit[cat].weight += ((parseInt(p.quantity, 10) || 0) * (parseFloat(p.weight) || 0))
   })
 
-  // Split ledger entries by type
-  const addedItems = ledger.filter(item => item.type === 'ADD')
-  const soldEntries = ledger.filter(item => item.type === 'SELL')
+  // Group active stock for detailed list view
+  const activeStockGroups = {}
+  products.forEach(p => {
+    const key = `${p.category}||${p.subcategory || ''}||${p.variant || ''}||${p.detail || ''}||${parseFloat(p.weight).toFixed(3)}`
+    if (!activeStockGroups[key]) {
+      activeStockGroups[key] = {
+        category: p.category,
+        subcategory: p.subcategory,
+        variant: p.variant,
+        detail: p.detail,
+        unitWeight: parseFloat(p.weight) || 0,
+        quantity: 0,
+        totalWeight: 0
+      }
+    }
+    activeStockGroups[key].quantity += (parseInt(p.quantity, 10) || 0)
+    activeStockGroups[key].totalWeight += ((parseInt(p.quantity, 10) || 0) * (parseFloat(p.weight) || 0))
+  })
+
+  const filteredGroups = Object.values(activeStockGroups).filter(g => {
+    if (!searchQuery) return true
+    const q = searchQuery.toLowerCase().trim()
+    return (g.category || '').toLowerCase().includes(q) ||
+           (g.subcategory || '').toLowerCase().includes(q) ||
+           (g.variant || '').toLowerCase().includes(q) ||
+           (g.detail || '').toLowerCase().includes(q)
+  }).sort((a, b) => {
+    if (a.category !== b.category) return (a.category || '').localeCompare(b.category || '')
+    if (a.subcategory !== b.subcategory) return (a.subcategory || '').localeCompare(b.subcategory || '')
+    if (a.variant !== b.variant) return (a.variant || '').localeCompare(b.variant || '')
+    return (a.detail || '').localeCompare(b.detail || '')
+  })
 
   // 1. Group all actual sales from soldItems (which contains total amount) chronologically
   const salesPoolForSell = {}
@@ -146,150 +176,55 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
         </div>
       </div>
 
-      <div className="audit-tables-grid">
+      <div className="card" style={{ marginTop: '20px' }}>
+        <div className="flex-between mb-16" style={{ flexWrap: 'wrap', gap: '12px' }}>
+          <h2 style={{ fontSize: 18, color: 'var(--gold)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+            <span>📋 விரிவான சரக்கு இருப்பு பட்டியல் (Detailed Inventory Stock List)</span>
+          </h2>
+          <input
+            type="text"
+            placeholder="தேடல் (வகை / விவரம் மூலம்) / Search..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{ width: '280px', height: '36px', padding: '0 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-main)', fontSize: '13px' }}
+          />
+        </div>
         
-        {/* ➕ Added Items Section */}
-        <div className="card">
-          <h2 style={{ marginBottom: '16px', fontSize: 18, color: 'var(--gold)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>➕ சேர்க்கப்பட்ட பொருட்கள்</span>
-          </h2>
-          <div className="table-wrap" style={{ maxHeight: '450px', overflowY: 'auto' }}>
-            <table>
-              <thead>
-                <tr>
-                  <th>பொருள் விவரம்</th>
-                  <th style={{ textAlign: 'right' }}>எடை (g)</th>
-                  <th className="hide-mobile" style={{ textAlign: 'center' }}>நிலை (Status)</th>
-                  <th className="hide-mobile" style={{ textAlign: 'right' }}>தேதி</th>
+        <div className="table-wrap" style={{ maxHeight: '600px', overflowY: 'auto' }}>
+          <table>
+            <thead>
+              <tr>
+                <th>பிரிவு (Category)</th>
+                <th>துணை பிரிவு (Subcategory)</th>
+                <th>மாதிரி (Variant)</th>
+                <th>விவரம் (Detail)</th>
+                <th style={{ textAlign: 'right' }}>எண்ணிக்கை (Qty)</th>
+                <th style={{ textAlign: 'right' }}>ஒற்றை எடை (Unit Wt)</th>
+                <th style={{ textAlign: 'right' }}>மொத்த எடை (Total Wt)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredGroups.map((g, idx) => (
+                <tr key={idx} className="table-row">
+                  <td className="fw-600">{g.category}</td>
+                  <td style={{ color: 'var(--text-sub)' }}>{g.subcategory || '—'}</td>
+                  <td className="fw-600">{g.variant || '—'}</td>
+                  <td style={{ color: 'var(--text-sub)' }}>{g.detail || '—'}</td>
+                  <td style={{ textAlign: 'right', fontWeight: 600 }}>{g.quantity} pcs</td>
+                  <td style={{ textAlign: 'right', color: 'var(--text-sub)' }}>{g.unitWeight.toFixed(3)}g</td>
+                  <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--gold)' }}>{g.totalWeight.toFixed(3)}g</td>
                 </tr>
-              </thead>
-              <tbody>
-                {addedItems.map(item => {
-                  const isSold = matchedAddIds.has(item.id)
-                  const isAuditEntry = item.variant_name === 'மாற்று இருப்பு' || 
-                                       item.detail?.includes('மாற்று இருப்பு') || 
-                                       item.category_name === 'மற்றவை'
-                  const isAudited = auditedIds.has(item.id)
-
-                  return (
-                    <tr key={item.id} className="table-row" style={isSold ? { opacity: 0.85 } : {}}>
-                      <td>
-                        <div className="fw-600" style={isSold ? { textDecoration: 'line-through', color: 'var(--text-sub)' } : {}}>
-                          {item.variant_name || '—'}
-                        </div>
-                        <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>
-                          {item.category_name} {item.subcategory_name ? `· ${item.subcategory_name}` : ''}
-                        </div>
-                        
-                        {/* Mobile view badge */}
-                        <div className="show-mobile" style={{ display: 'none', marginTop: '6px' }}>
-                          {isAuditEntry ? (
-                            <span style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '10px', background: 'rgba(231, 76, 60, 0.15)', color: '#E74C3C', fontWeight: 600 }}>⚙️ தணிக்கை</span>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => toggleAuditStatus(item.id)}
-                              style={{ border: 'none', background: isAudited ? 'rgba(46, 204, 113, 0.15)' : 'rgba(212, 175, 55, 0.15)', color: isAudited ? '#2ECC71' : 'var(--gold)', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 600, cursor: 'pointer' }}
-                            >
-                              {isAudited ? '✅ தணிக்கை' : '👤 நிர்வாகி'}
-                            </button>
-                          )}
-                        </div>
-
-                        <div className="show-mobile" style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: '4px' }}>
-                          தேதி: {new Date(item.created_at).toLocaleDateString('en-IN')}
-                        </div>
-                      </td>
-                      <td style={{ textAlign: 'right', fontWeight: 600, color: isSold ? '#EF4444' : 'var(--gold)' }}>
-                        {parseFloat(item.weight || 0).toFixed(2)}g
-                        {isSold && (
-                          <span style={{ fontSize: 9, fontWeight: 500, display: 'block', color: '#EF4444', marginTop: '2px' }}>
-                            (விற்பனை செய்யப்பட்டது)
-                          </span>
-                        )}
-                      </td>
-                      <td className="hide-mobile" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                        {isAuditEntry ? (
-                          <span style={{ padding: '4px 8px', borderRadius: '6px', fontSize: '11px', background: 'rgba(231, 76, 60, 0.15)', color: '#E74C3C', fontWeight: 600 }} title="தணிக்கை திருத்தம் (Audit Entry)">
-                            ⚙️ தணிக்கை (Audit)
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => toggleAuditStatus(item.id)}
-                            style={{ border: 'none', background: isAudited ? 'rgba(46, 204, 113, 0.15)' : 'rgba(212, 175, 55, 0.08)', color: isAudited ? '#2ECC71' : 'var(--text-sub)', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s ease' }}
-                            title="நிலையை மாற்ற கிளிக் செய்யவும் (Click to toggle)"
-                          >
-                            {isAudited ? '✅ சரிபார்க்கப்பட்டது (Audited)' : '👤 நிர்வாகி (Added)'}
-                          </button>
-                        )}
-                      </td>
-                      <td className="hide-mobile" style={{ textAlign: 'right', fontSize: 11, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>
-                        {new Date(item.created_at).toLocaleDateString('en-IN')}
-                      </td>
-                    </tr>
-                  )
-                })}
-                {addedItems.length === 0 && (
-                  <tr>
-                    <td colSpan="3" style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-sub)' }}>
-                      பதிவுகள் இல்லை
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* ➖ Sold Items Section */}
-        <div className="card">
-          <h2 style={{ marginBottom: '16px', fontSize: 18, color: '#EF4444', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>➖ விற்பனை செய்யப்பட்ட பொருட்கள்</span>
-          </h2>
-          <div className="table-wrap" style={{ maxHeight: '450px', overflowY: 'auto' }}>
-            <table>
-              <thead>
+              ))}
+              {filteredGroups.length === 0 && (
                 <tr>
-                  <th>பொருள் விவரம்</th>
-                  <th style={{ textAlign: 'right' }}>எடை (g)</th>
-                  <th className="hide-mobile" style={{ textAlign: 'right' }}>தேதி</th>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-sub)' }}>
+                    இருப்பு பொருட்கள் ஏதுமில்லை
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {soldEntries.map(item => {
-                  return (
-                    <tr key={item.id} className="table-row">
-                      <td>
-                        <div className="fw-600">{item.variant_name || '—'}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>
-                          {item.category_name} {item.subcategory_name ? `· ${item.subcategory_name}` : ''}
-                        </div>
-                        <div className="show-mobile" style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: '4px' }}>
-                          தேதி: {new Date(item.created_at).toLocaleDateString('en-IN')}
-                        </div>
-                      </td>
-                      <td style={{ textAlign: 'right', fontWeight: 600 }}>
-                        {parseFloat(item.weight || 0).toFixed(2)}g
-                      </td>
-                      <td className="hide-mobile" style={{ textAlign: 'right', fontSize: 11, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>
-                        {new Date(item.created_at).toLocaleDateString('en-IN')}
-                      </td>
-                    </tr>
-                  )
-                })}
-                {soldEntries.length === 0 && (
-                  <tr>
-                    <td colSpan="3" style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-sub)' }}>
-                      பதிவுகள் இல்லை
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              )}
+            </tbody>
+          </table>
         </div>
-
       </div>
     </div>
   )
