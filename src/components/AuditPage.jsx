@@ -211,7 +211,6 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
                                   <thead>
                                     <tr style={{ borderBottom: '1px solid var(--border)' }}>
                                       <th style={{ textAlign: 'left', padding: '6px 0', color: 'var(--text-sub)' }}>வகை (Variant)</th>
-                                      <th style={{ textAlign: 'right', padding: '6px 0', color: 'var(--text-sub)' }}>ஒற்றை எடை</th>
                                       <th style={{ textAlign: 'right', padding: '6px 0', color: 'var(--text-sub)' }}>எண்ணிக்கை</th>
                                       <th style={{ textAlign: 'right', padding: '6px 0', color: 'var(--text-sub)' }}>மொத்த எடை</th>
                                     </tr>
@@ -225,7 +224,6 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
                                             {variant.name}
                                           </div>
                                         </td>
-                                        <td style={{ textAlign: 'right', padding: '8px 0', color: 'var(--text-sub)' }}>{variant.unitWeight.toFixed(3)}g</td>
                                         <td style={{ textAlign: 'right', padding: '8px 0', fontWeight: 600 }}>{variant.qty} pcs</td>
                                         <td style={{ textAlign: 'right', padding: '8px 0', fontWeight: 700, color: 'var(--gold)' }}>{variant.weight.toFixed(3)}g</td>
                                       </tr>
