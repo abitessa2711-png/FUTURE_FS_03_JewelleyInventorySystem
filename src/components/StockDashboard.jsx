@@ -14,13 +14,18 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
   const filteredProducts = availableProducts.filter(p => {
     const matchesCategory = selectedCategory ? p.category === selectedCategory : true
     
-    const term = searchQuery.toLowerCase()
-    const matchesSearch = term ? (
-      (p.category || '').toLowerCase().includes(term) ||
-      (p.subcategory || '').toLowerCase().includes(term) ||
-      (p.variant || '').toLowerCase().includes(term) ||
-      (p.detail || '').toLowerCase().includes(term)
-    ) : true
+    if (!searchQuery) return matchesCategory
+
+    // Tokenize search query by spaces to support searching Category, Subcategory, and Variant together
+    const terms = searchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean)
+    
+    const matchesSearch = terms.every(term => {
+      return (p.category || '').toLowerCase().includes(term) ||
+             (p.subcategory || '').toLowerCase().includes(term) ||
+             (p.variant || '').toLowerCase().includes(term) ||
+             (p.detail || '').toLowerCase().includes(term) ||
+             String(p.weight || '').includes(term)
+    })
 
     return matchesCategory && matchesSearch
   })
@@ -133,7 +138,12 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
                         </span>
                       </td>
                       <td style={{ fontWeight: 600 }}>
-                        {item.variant || item.subcategory || '—'}
+                        <div>{item.variant || '—'}</div>
+                        {item.subcategory && (
+                          <div style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'normal', marginTop: '2px' }}>
+                            {item.subcategory}
+                          </div>
+                        )}
                         <div className="show-mobile" style={{ fontSize: '11px', color: 'var(--gold)', fontWeight: 'normal', marginTop: '2px' }}>
                           {item.category}
                         </div>
