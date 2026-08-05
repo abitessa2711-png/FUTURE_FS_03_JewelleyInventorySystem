@@ -299,6 +299,89 @@ export default function App() {
     if (error) console.error("Error deleting product:", error)
   }
 
+  const deleteSale = async (saleId) => {
+    // 1. Fetch the sale details first
+    const { data: saleData, error: fetchErr } = await supabase
+      .from('sales')
+      .select('*')
+      .eq('id', saleId)
+      .single()
+
+    if (fetchErr || !saleData) {
+      console.error("Error fetching sale to delete:", fetchErr)
+      alert("Error fetching sale details.")
+      return
+    }
+
+    try {
+      // 2. Look up the ID for categories, subcategories, variants to find the stock entry
+      const catId = dbCategories.find(c => c.name === saleData.category)?.id
+      const subId = dbSubcategories.find(s => s.name === saleData.subcategory)?.id || null
+      const varId = dbVariants.find(v => v.name === saleData.variant)?.id || null
+
+      // Find matching stock entry
+      const { data: stockEntries } = await supabase
+        .from('stock_entries')
+        .select('*')
+        .eq('category_id', catId)
+        .eq('subcategory_id', subId || null)
+        .eq('variant_id', varId || null)
+        .eq('detail', saleData.detail || '')
+        .eq('weight', saleData.weight)
+
+      if (stockEntries && stockEntries.length > 0) {
+        const matchedStock = stockEntries[0]
+        const restoredQty = (matchedStock.quantity || 0) + (saleData.quantity || 0)
+        const restoredWeight = saleData.weight
+
+        // Update stock entry
+        const { error: updateErr } = await supabase
+          .from('stock_entries')
+          .update({ quantity: restoredQty, weight: restoredWeight })
+          .eq('id', matchedStock.id)
+
+        if (updateErr) console.error("Error updating stock during sale deletion:", updateErr)
+      } else {
+        // Recreate stock entry if it was completely deleted
+        const { error: insertErr } = await supabase
+          .from('stock_entries')
+          .insert({
+            category_id: catId,
+            subcategory_id: subId || null,
+            variant_id: varId || null,
+            detail: saleData.detail || '',
+            weight: saleData.weight,
+            quantity: saleData.quantity || 0
+          })
+        if (insertErr) console.error("Error recreating stock entry during sale deletion:", insertErr)
+      }
+
+      // 3. Delete the sale from sales table
+      const { error: deleteSaleErr } = await supabase
+        .from('sales')
+        .delete()
+        .eq('id', saleId)
+      if (deleteSaleErr) throw deleteSaleErr
+
+      // 4. Delete related ledger entry of type SELL matching the criteria
+      await supabase
+        .from('ledger')
+        .delete()
+        .eq('type', 'SELL')
+        .eq('category_name', saleData.category)
+        .eq('subcategory_name', saleData.subcategory)
+        .eq('variant_name', saleData.variant)
+        .eq('weight', saleData.weight)
+        
+      // 5. Reload data to update UI
+      await loadData()
+      alert("விற்பனை பதிவு வெற்றிகரமாக நீக்கப்பட்டது மற்றும் சரக்கு இருப்பு சரிசெய்யப்பட்டது.")
+    } catch (err) {
+      console.error("Error deleting sale:", err)
+      alert("Error deleting sale: " + err.message)
+    }
+  }
+
   const updateProduct = async (id, updates) => {
     const dbUpdates = {}
     if (updates.weight !== undefined) dbUpdates.weight = parseFloat(updates.weight)
@@ -425,7 +508,7 @@ export default function App() {
     stock:     <StockDashboard products={products}   onDelete={deleteProduct} role={user?.role} />,
     add:       <AddStock       onAddProduct={addProduct} />,
     sell:      <SellDashboard  products={products}   processSale={processSale} />,
-    sold:        <SoldItems      soldItems={soldItems} />,
+    sold:        <SoldItems      soldItems={soldItems} onDelete={deleteSale} role={user?.role} />,
     old_buyback: <OldBuyback     buybacks={buybacks}   onAddBuyback={addBuyback} onDeleteBuyback={deleteBuyback} />,
     audit:       <AuditPage      products={products}   soldItems={soldItems} ledger={ledger} />,
     reports:     <Reports        products={products}   soldItems={soldItems} role={user?.role} deleteProduct={deleteProduct} />

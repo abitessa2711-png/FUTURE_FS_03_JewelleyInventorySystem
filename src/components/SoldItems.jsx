@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
-import { Receipt, Search, User } from 'lucide-react'
+import { Receipt, Search, User, Trash2 } from 'lucide-react'
 
-const SoldItems = ({ soldItems = [] }) => {
+const SoldItems = ({ soldItems = [], onDelete, role = 'admin' }) => {
   const [search, setSearch] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo,   setDateTo]   = useState('')
@@ -64,6 +64,7 @@ const SoldItems = ({ soldItems = [] }) => {
                 <th>Item</th>
                 <th className="hide-mobile">Category</th>
                 <th style={{ textAlign: 'right' }}>Qty | Wt</th>
+                {role === 'admin' && <th style={{ width: '60px', textAlign: 'center' }}>Action</th>}
               </tr>
             </thead>
             <tbody>
@@ -87,11 +88,23 @@ const SoldItems = ({ soldItems = [] }) => {
                   </td>
                   <td className="hide-mobile" style={{ fontSize: 13 }}>{s.category}</td>
                   <td style={{ textAlign: 'right', fontSize: 13 }}>{s.quantity || 0} | {s.weight || 0}g</td>
+                  {role === 'admin' && (
+                    <td style={{ textAlign: 'center' }}>
+                      <button
+                        className="btn btn-danger-ghost"
+                        style={{ padding: '6px', minWidth: 'auto' }}
+                        onClick={() => window.confirm('இந்த விற்பனைப் பதிவை நீக்க வேண்டுமா? இது சரக்கு இருப்பை தானாகவே திரும்பப் பெறும்.') && onDelete(s.id)}
+                        title="Delete Sale"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: 48, color: 'var(--text-sub)' }}>
+                  <td colSpan={role === 'admin' ? 8 : 7} style={{ textAlign: 'center', padding: 48, color: 'var(--text-sub)' }}>
                     <Receipt size={40} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
                     <div>No sales found</div>
                   </td>

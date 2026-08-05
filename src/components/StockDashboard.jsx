@@ -4,17 +4,31 @@ import { Trash2, Search, Filter } from 'lucide-react'
 const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
+  const [selectedSubcategory, setSelectedSubcategory] = useState('')
+  const [selectedVariant, setSelectedVariant] = useState('')
 
   const availableProducts = products
 
   // Get unique categories for filter
-  const categories = [...new Set(availableProducts.map(p => p.category).filter(Boolean))]
+  const categories = [...new Set(availableProducts.map(p => p.category).filter(Boolean))].sort()
 
-  // Filter products based on search query and selected category
+  // Get unique subcategories based on selected category
+  const subcategories = selectedCategory
+    ? [...new Set(availableProducts.filter(p => p.category === selectedCategory).map(p => p.subcategory).filter(Boolean))].sort()
+    : []
+
+  // Get unique variants based on selected category and subcategory
+  const variants = (selectedCategory && selectedSubcategory)
+    ? [...new Set(availableProducts.filter(p => p.category === selectedCategory && p.subcategory === selectedSubcategory).map(p => p.variant).filter(Boolean))].sort()
+    : []
+
+  // Filter products based on search query and selected category, subcategory, and variant
   const filteredProducts = availableProducts.filter(p => {
     const matchesCategory = selectedCategory ? p.category === selectedCategory : true
+    const matchesSubcategory = selectedSubcategory ? p.subcategory === selectedSubcategory : true
+    const matchesVariant = selectedVariant ? p.variant === selectedVariant : true
     
-    if (!searchQuery) return matchesCategory
+    if (!searchQuery) return matchesCategory && matchesSubcategory && matchesVariant
 
     // Tokenize search query by spaces to support searching Category, Subcategory, and Variant together
     const terms = searchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean)
@@ -27,7 +41,7 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
              String(p.weight || '').includes(term)
     })
 
-    return matchesCategory && matchesSearch
+    return matchesCategory && matchesSubcategory && matchesVariant && matchesSearch
   })
 
   // Calculations for stats card
@@ -47,8 +61,9 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
 
       {/* Search and Filter Card */}
       <div className="card mb-16" style={{ padding: '16px' }}>
-        <div className="search-filter-belt">
-          <div className="search-input-wrap">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', alignItems: 'center' }}>
+          
+          <div className="search-input-wrap" style={{ margin: 0, width: '100%' }}>
             <span className="search-icon">
               <Search size={16} />
             </span>
@@ -58,24 +73,73 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="search-input"
+              style={{ width: '100%' }}
             />
           </div>
 
-          <div className="filter-select-wrap">
+          {/* Category Filter */}
+          <div className="filter-select-wrap" style={{ margin: 0, width: '100%' }}>
             <span className="filter-icon">
               <Filter size={16} />
             </span>
             <select
               value={selectedCategory}
-              onChange={e => setSelectedCategory(e.target.value)}
+              onChange={e => {
+                setSelectedCategory(e.target.value)
+                setSelectedSubcategory('')
+                setSelectedVariant('')
+              }}
               className="filter-select"
+              style={{ width: '100%' }}
             >
-              <option value="">— அனைத்து பிரிவுகள் (All) —</option>
+              <option value="">— அனைத்து பிரிவுகள் (All Category) —</option>
               {categories.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
           </div>
+
+          {/* Subcategory Filter */}
+          <div className="filter-select-wrap" style={{ margin: 0, width: '100%', opacity: selectedCategory ? 1 : 0.6 }}>
+            <span className="filter-icon">
+              <Filter size={16} />
+            </span>
+            <select
+              value={selectedSubcategory}
+              onChange={e => {
+                setSelectedSubcategory(e.target.value)
+                setSelectedVariant('')
+              }}
+              disabled={!selectedCategory}
+              className="filter-select"
+              style={{ width: '100%' }}
+            >
+              <option value="">— துணை பிரிவு (All Subcategory) —</option>
+              {subcategories.map(sub => (
+                <option key={sub} value={sub}>{sub}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Variant Filter */}
+          <div className="filter-select-wrap" style={{ margin: 0, width: '100%', opacity: (selectedCategory && selectedSubcategory) ? 1 : 0.6 }}>
+            <span className="filter-icon">
+              <Filter size={16} />
+            </span>
+            <select
+              value={selectedVariant}
+              onChange={e => setSelectedVariant(e.target.value)}
+              disabled={!selectedCategory || !selectedSubcategory}
+              className="filter-select"
+              style={{ width: '100%' }}
+            >
+              <option value="">— மாதிரி / வகை (All Variant) —</option>
+              {variants.map(v => (
+                <option key={v} value={v}>{v}</option>
+              ))}
+            </select>
+          </div>
+
         </div>
       </div>
 
