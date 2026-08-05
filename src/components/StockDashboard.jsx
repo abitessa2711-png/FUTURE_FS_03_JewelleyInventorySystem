@@ -7,7 +7,7 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
   const [selectedSubcategory, setSelectedSubcategory] = useState('')
   const [selectedVariant, setSelectedVariant] = useState('')
 
-  const availableProducts = products
+  const availableProducts = (products || []).filter(p => (p.quantity || 0) > 0)
 
   // Get unique categories for filter
   const categories = [...new Set(availableProducts.map(p => p.category).filter(Boolean))].sort()
