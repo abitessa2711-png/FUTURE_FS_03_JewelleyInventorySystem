@@ -57,6 +57,7 @@ const SoldItems = ({ soldItems = [] }) => {
           <table>
             <thead>
               <tr>
+                <th style={{ width: '50px' }}>S.No</th>
                 <th>Date</th>
                 <th className="hide-mobile">Bill ID</th>
                 <th>Customer</th>
@@ -68,6 +69,7 @@ const SoldItems = ({ soldItems = [] }) => {
             <tbody>
               {filtered.map((s, i) => (
                 <tr key={i}>
+                  <td style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-sub)' }}>{i + 1}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>
                     {s.date ? new Date(s.date).toLocaleDateString('en-IN') : '—'}
                   </td>
@@ -89,7 +91,7 @@ const SoldItems = ({ soldItems = [] }) => {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: 48, color: 'var(--text-sub)' }}>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: 48, color: 'var(--text-sub)' }}>
                     <Receipt size={40} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
                     <div>No sales found</div>
                   </td>
