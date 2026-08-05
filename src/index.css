@@ -958,6 +958,66 @@ td { color: var(--text-main); }
     grid-column: span 1 !important;
     width: 100% !important;
   }
+
+  /* Responsive Audit Page Tree styles */
+  .tree-category-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+    padding: 12px 16px !important;
+  }
+  .tree-category-row > div:last-child {
+    margin-left: 30px !important;
+    font-size: 13px !important;
+    gap: 12px !important;
+  }
+
+  .tree-subcategory-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+    padding: 10px 12px !important;
+  }
+  .tree-subcategory-row > div:last-child {
+    margin-left: 26px !important;
+    font-size: 12px !important;
+    gap: 10px !important;
+  }
+
+  .audit-variant-table {
+    display: block !important;
+  }
+  .audit-variant-table thead {
+    display: none !important;
+  }
+  .audit-variant-table tbody {
+    display: block !important;
+  }
+  .audit-variant-table tr {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 8px 0 !important;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.05) !important;
+  }
+  .audit-variant-table td {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 4px 0 !important;
+    width: 100% !important;
+    text-align: right !important;
+  }
+  .audit-variant-table td:first-child {
+    justify-content: flex-start !important;
+    font-weight: 700 !important;
+    color: var(--text-main) !important;
+  }
+  .audit-variant-table td:not(:first-child)::before {
+    content: attr(data-label);
+    font-weight: normal;
+    color: var(--text-sub);
+    font-size: 12px;
+  }
 }
 
 /* Stock Select Badges Styling */

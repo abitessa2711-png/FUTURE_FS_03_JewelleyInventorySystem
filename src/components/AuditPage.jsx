@@ -192,6 +192,7 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
                             <div 
                               onClick={() => toggleSub(subKey)}
                               style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', cursor: 'pointer', background: isSubExpanded ? 'rgba(255, 255, 255, 0.02)' : 'transparent' }}
+                              className="tree-subcategory-row"
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 {isSubExpanded ? <ChevronDown size={16} color="var(--text-main)" /> : <ChevronRight size={16} color="var(--text-sub)" />}
@@ -207,7 +208,7 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
                             {/* Variants List (Visible only when Subcategory is expanded) */}
                             {isSubExpanded && (
                               <div style={{ background: 'rgba(0, 0, 0, 0.15)', borderTop: '1px solid var(--border)', padding: '10px 16px' }}>
-                                <table style={{ width: '100%', fontSize: '13px' }}>
+                                <table className="audit-variant-table" style={{ width: '100%', fontSize: '13px' }}>
                                   <thead>
                                     <tr style={{ borderBottom: '1px solid var(--border)' }}>
                                       <th style={{ textAlign: 'left', padding: '6px 0', color: 'var(--text-sub)' }}>வகை (Variant)</th>
@@ -218,14 +219,14 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
                                   <tbody>
                                     {Object.values(sub.variants).sort((a, b) => b.weight - a.weight).map(variant => (
                                       <tr key={variant.name} style={{ borderBottom: '1px dashed rgba(255,255,255,0.03)' }}>
-                                        <td style={{ padding: '8px 0', fontWeight: 600 }}>
+                                        <td data-label="வகை" style={{ padding: '8px 0', fontWeight: 600 }}>
                                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                             <Tag size={12} color="var(--gold)" />
                                             {variant.name}
                                           </div>
                                         </td>
-                                        <td style={{ textAlign: 'right', padding: '8px 0', fontWeight: 600 }}>{variant.qty} pcs</td>
-                                        <td style={{ textAlign: 'right', padding: '8px 0', fontWeight: 700, color: 'var(--gold)' }}>{variant.weight.toFixed(3)}g</td>
+                                        <td data-label="எண்ணிக்கை" style={{ textAlign: 'right', padding: '8px 0', fontWeight: 600 }}>{variant.qty} pcs</td>
+                                        <td data-label="மொத்த எடை" style={{ textAlign: 'right', padding: '8px 0', fontWeight: 700, color: 'var(--gold)' }}>{variant.weight.toFixed(3)}g</td>
                                       </tr>
                                     ))}
                                   </tbody>
