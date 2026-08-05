@@ -674,7 +674,7 @@ td { color: var(--text-main); }
 /* ======== AUDIT GRIDS ======== */
 .audit-cards-grid {
   display: grid;
-  grid-template-columns: minmax(200px, 1fr) minmax(200px, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 24px;
   margin-bottom: 30px;
 }

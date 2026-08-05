@@ -19,7 +19,19 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
   }
 
   const totalQuantity = (products || []).reduce((sum, p) => sum + (parseInt(p.quantity, 10) || 0), 0)
+  const totalWeight = (products || []).reduce((sum, p) => sum + (parseFloat(p.weight) || 0), 0)
   const totalSold = (soldItems || []).reduce((sum, s) => sum + (parseInt(s.quantity, 10) || 0), 0)
+
+  // Calculate category-wise split
+  const categorySplit = {}
+  products.forEach(p => {
+    const cat = p.category || 'மற்றவை'
+    if (!categorySplit[cat]) {
+      categorySplit[cat] = { qty: 0, weight: 0 }
+    }
+    categorySplit[cat].qty += (parseInt(p.quantity, 10) || 0)
+    categorySplit[cat].weight += (parseFloat(p.weight) || 0)
+  })
 
   // Split ledger entries by type
   const addedItems = ledger.filter(item => item.type === 'ADD')
@@ -95,6 +107,14 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
         </div>
 
         <div className="card" style={cardStyle}>
+          <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'rgba(212,175,55,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Package size={26} color="var(--gold)" />
+          </div>
+          <h2 style={{ color: 'var(--text-sub)', margin: 0, fontSize: 18 }}>மொத்த இருப்பு (எடை)</h2>
+          <div style={{ fontSize: '30px', fontWeight: 'bold', color: 'var(--gold)', lineHeight: '1' }}>{totalWeight.toFixed(3)}g</div>
+        </div>
+
+        <div className="card" style={cardStyle}>
           <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'rgba(46,204,113,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Activity size={26} color="#2ECC71" />
           </div>
@@ -102,6 +122,28 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
           <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#2ECC71', lineHeight: '1' }}>{totalSold}</div>
         </div>
 
+      </div>
+
+      {/* Category-wise Inventory Weights */}
+      <div className="card" style={{ marginBottom: '30px', padding: '20px 24px' }}>
+        <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0, color: 'var(--gold)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>📦 பிரிவு வாரியாக மொத்த எடை (Category-wise Inventory Weights)</span>
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px', marginTop: '20px' }}>
+          {Object.entries(categorySplit).sort((a, b) => b[1].weight - a[1].weight).map(([catName, stats]) => (
+            <div key={catName} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px' }}>
+              <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-main)', marginBottom: '10px', borderBottom: '1px solid var(--border)', paddingBottom: '6px' }}>{catName}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                <span style={{ color: 'var(--text-sub)' }}>எண்ணிக்கை (Qty):</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{stats.qty} pcs</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginTop: '6px' }}>
+                <span style={{ color: 'var(--text-sub)' }}>மொத்த எடை (Weight):</span>
+                <span style={{ fontWeight: 700, color: 'var(--gold)' }}>{stats.weight.toFixed(3)}g</span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="audit-tables-grid">
