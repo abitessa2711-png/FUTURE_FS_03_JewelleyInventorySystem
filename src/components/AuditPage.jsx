@@ -25,13 +25,15 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
     setExpandedSubs(newSet)
   }
 
-  const totalQuantity = (products || []).reduce((sum, p) => sum + (parseInt(p.quantity, 10) || 0), 0)
-  const totalWeight = (products || []).reduce((sum, p) => sum + ((parseInt(p.quantity, 10) || 0) * (parseFloat(p.weight) || 0)), 0)
+  const activeProducts = (products || []).filter(p => (parseInt(p.quantity, 10) || 0) > 0)
+
+  const totalQuantity = activeProducts.reduce((sum, p) => sum + (parseInt(p.quantity, 10) || 0), 0)
+  const totalWeight = activeProducts.reduce((sum, p) => sum + ((parseInt(p.quantity, 10) || 0) * (parseFloat(p.weight) || 0)), 0)
   const totalSold = (soldItems || []).reduce((sum, s) => sum + (parseInt(s.quantity, 10) || 0), 0)
 
   // Calculate category-wise split
   const categorySplit = {}
-  products.forEach(p => {
+  activeProducts.forEach(p => {
     const cat = p.category || 'மற்றவை'
     if (!categorySplit[cat]) {
       categorySplit[cat] = { qty: 0, weight: 0 }
@@ -42,7 +44,7 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
 
   // Group active stock hierarchically: Category -> Subcategory -> Variant/Detail
   const hierarchy = {}
-  products.forEach(p => {
+  activeProducts.forEach(p => {
     const cat = p.category || 'மற்றவை'
     const sub = p.subcategory || 'வகைகள்'
     const variantKey = p.variant || '—'
