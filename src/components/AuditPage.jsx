@@ -1,22 +1,28 @@
 import React, { useState } from 'react'
-import { Package, Activity } from 'lucide-react'
+import { Package, Activity, ChevronDown, ChevronRight, Folder, Layers, Tag } from 'lucide-react'
 
 const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
-  const [auditedIds, setAuditedIds] = useState(() => {
-    const saved = localStorage.getItem('manually_audited_ledger_ids')
-    return saved ? new Set(JSON.parse(saved)) : new Set()
-  })
-  const [searchQuery, setSearchQuery] = useState('')
+  const [expandedCats, setExpandedCats] = useState(new Set())
+  const [expandedSubs, setExpandedSubs] = useState(new Set())
 
-  const toggleAuditStatus = (id) => {
-    const newSet = new Set(auditedIds)
-    if (newSet.has(id)) {
-      newSet.delete(id)
+  const toggleCat = (catName) => {
+    const newSet = new Set(expandedCats)
+    if (newSet.has(catName)) {
+      newSet.delete(catName)
     } else {
-      newSet.add(id)
+      newSet.add(catName)
     }
-    setAuditedIds(newSet)
-    localStorage.setItem('manually_audited_ledger_ids', JSON.stringify([...newSet]))
+    setExpandedCats(newSet)
+  }
+
+  const toggleSub = (subKey) => {
+    const newSet = new Set(expandedSubs)
+    if (newSet.has(subKey)) {
+      newSet.delete(subKey)
+    } else {
+      newSet.add(subKey)
+    }
+    setExpandedSubs(newSet)
   }
 
   const totalQuantity = (products || []).reduce((sum, p) => sum + (parseInt(p.quantity, 10) || 0), 0)
@@ -34,37 +40,50 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
     categorySplit[cat].weight += ((parseInt(p.quantity, 10) || 0) * (parseFloat(p.weight) || 0))
   })
 
-  // Group active stock for detailed list view
-  const activeStockGroups = {}
+  // Group active stock hierarchically: Category -> Subcategory -> Variant/Detail
+  const hierarchy = {}
   products.forEach(p => {
-    const key = `${p.category}||${p.subcategory || ''}||${p.variant || ''}||${p.detail || ''}||${parseFloat(p.weight).toFixed(3)}`
-    if (!activeStockGroups[key]) {
-      activeStockGroups[key] = {
-        category: p.category,
-        subcategory: p.subcategory,
-        variant: p.variant,
-        detail: p.detail,
-        unitWeight: parseFloat(p.weight) || 0,
-        quantity: 0,
-        totalWeight: 0
+    const cat = p.category || 'மற்றவை'
+    const sub = p.subcategory || 'வகைகள்'
+    const variantKey = p.variant || '—'
+    const detailKey = p.detail || ''
+    const unitWt = parseFloat(p.weight) || 0
+    const qty = parseInt(p.quantity, 10) || 0
+    const totalWt = qty * unitWt
+
+    if (!hierarchy[cat]) {
+      hierarchy[cat] = {
+        name: cat,
+        qty: 0,
+        weight: 0,
+        subcategories: {}
       }
     }
-    activeStockGroups[key].quantity += (parseInt(p.quantity, 10) || 0)
-    activeStockGroups[key].totalWeight += ((parseInt(p.quantity, 10) || 0) * (parseFloat(p.weight) || 0))
-  })
+    hierarchy[cat].qty += qty
+    hierarchy[cat].weight += totalWt
 
-  const filteredGroups = Object.values(activeStockGroups).filter(g => {
-    if (!searchQuery) return true
-    const q = searchQuery.toLowerCase().trim()
-    return (g.category || '').toLowerCase().includes(q) ||
-           (g.subcategory || '').toLowerCase().includes(q) ||
-           (g.variant || '').toLowerCase().includes(q) ||
-           (g.detail || '').toLowerCase().includes(q)
-  }).sort((a, b) => {
-    if (a.category !== b.category) return (a.category || '').localeCompare(b.category || '')
-    if (a.subcategory !== b.subcategory) return (a.subcategory || '').localeCompare(b.subcategory || '')
-    if (a.variant !== b.variant) return (a.variant || '').localeCompare(b.variant || '')
-    return (a.detail || '').localeCompare(b.detail || '')
+    if (!hierarchy[cat].subcategories[sub]) {
+      hierarchy[cat].subcategories[sub] = {
+        name: sub,
+        qty: 0,
+        weight: 0,
+        variants: {}
+      }
+    }
+    hierarchy[cat].subcategories[sub].qty += qty
+    hierarchy[cat].subcategories[sub].weight += totalWt
+
+    const varKey = detailKey ? `${variantKey} (${detailKey})` : variantKey
+    if (!hierarchy[cat].subcategories[sub].variants[varKey]) {
+      hierarchy[cat].subcategories[sub].variants[varKey] = {
+        name: varKey,
+        unitWeight: unitWt,
+        qty: 0,
+        weight: 0
+      }
+    }
+    hierarchy[cat].subcategories[sub].variants[varKey].qty += qty
+    hierarchy[cat].subcategories[sub].variants[varKey].weight += totalWt
   })
 
   const cardStyle = {
@@ -129,54 +148,101 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [] }) => {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: '20px' }}>
-        <div className="flex-between mb-16" style={{ flexWrap: 'wrap', gap: '12px' }}>
-          <h2 style={{ fontSize: 18, color: 'var(--gold)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-            <span>📋 விரிவான சரக்கு இருப்பு பட்டியல் (Detailed Inventory Stock List)</span>
-          </h2>
-          <input
-            type="text"
-            placeholder="தேடல் (வகை / விவரம் மூலம்) / Search..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{ width: '280px', height: '36px', padding: '0 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-main)', fontSize: '13px' }}
-          />
-        </div>
+      <div className="card" style={{ marginTop: '20px', padding: '24px' }}>
+        <h2 style={{ fontSize: 18, color: 'var(--gold)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', borderBottom: '1px solid var(--border)', paddingBottom: '10px' }}>
+          <span>📋 வகைப்பாடு இருப்பு விவரம் (Hierarchical Category Stock)</span>
+        </h2>
         
-        <div className="table-wrap" style={{ maxHeight: '600px', overflowY: 'auto' }}>
-          <table>
-            <thead>
-              <tr>
-                <th>பிரிவு (Category)</th>
-                <th>துணை பிரிவு (Subcategory)</th>
-                <th>மாதிரி (Variant)</th>
-                <th>விவரம் (Detail)</th>
-                <th style={{ textAlign: 'right' }}>எண்ணிக்கை (Qty)</th>
-                <th style={{ textAlign: 'right' }}>ஒற்றை எடை (Unit Wt)</th>
-                <th style={{ textAlign: 'right' }}>மொத்த எடை (Total Wt)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredGroups.map((g, idx) => (
-                <tr key={idx} className="table-row">
-                  <td className="fw-600">{g.category}</td>
-                  <td style={{ color: 'var(--text-sub)' }}>{g.subcategory || '—'}</td>
-                  <td className="fw-600">{g.variant || '—'}</td>
-                  <td style={{ color: 'var(--text-sub)' }}>{g.detail || '—'}</td>
-                  <td style={{ textAlign: 'right', fontWeight: 600 }}>{g.quantity} pcs</td>
-                  <td style={{ textAlign: 'right', color: 'var(--text-sub)' }}>{g.unitWeight.toFixed(3)}g</td>
-                  <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--gold)' }}>{g.totalWeight.toFixed(3)}g</td>
-                </tr>
-              ))}
-              {filteredGroups.length === 0 && (
-                <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-sub)' }}>
-                    இருப்பு பொருட்கள் ஏதுமில்லை
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {Object.values(hierarchy).sort((a, b) => b.weight - a.weight).map(cat => {
+            const isCatExpanded = expandedCats.has(cat.name)
+            
+            return (
+              <div key={cat.name} style={{ border: '1px solid var(--border)', borderRadius: '12px', background: 'rgba(255, 255, 255, 0.01)', overflow: 'hidden' }}>
+                {/* Category Row */}
+                <div 
+                  onClick={() => toggleCat(cat.name)}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', cursor: 'pointer', background: isCatExpanded ? 'rgba(212, 175, 55, 0.06)' : 'transparent', transition: 'all 0.2s ease' }}
+                  className="tree-category-row"
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {isCatExpanded ? <ChevronDown size={18} color="var(--gold)" /> : <ChevronRight size={18} color="var(--text-sub)" />}
+                    <Folder size={18} color="var(--gold)" />
+                    <span style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-main)' }}>{cat.name}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '20px', fontSize: '14px', fontWeight: 600 }}>
+                    <span style={{ color: 'var(--text-sub)' }}>{cat.qty} pcs</span>
+                    <span style={{ color: 'var(--gold)' }}>{cat.weight.toFixed(3)}g</span>
+                  </div>
+                </div>
+
+                {/* Subcategories (Visible only when Category is expanded) */}
+                {isCatExpanded && (
+                  <div style={{ background: 'rgba(0,0,0,0.1)', borderTop: '1px solid var(--border)', padding: '12px 20px' }}>
+                    {Object.values(cat.subcategories).length === 0 ? (
+                      <div style={{ padding: '10px', color: 'var(--text-sub)', fontSize: '13px' }}>பிரிவுகள் ஏதுமில்லை</div>
+                    ) : (
+                      Object.values(cat.subcategories).sort((a, b) => b.weight - a.weight).map(sub => {
+                        const subKey = `${cat.name}||${sub.name}`
+                        const isSubExpanded = expandedSubs.has(subKey)
+                        
+                        return (
+                          <div key={sub.name} style={{ margin: '8px 0', border: '1px solid var(--border)', borderRadius: '8px', background: 'rgba(255, 255, 255, 0.01)', overflow: 'hidden' }}>
+                            {/* Subcategory Row */}
+                            <div 
+                              onClick={() => toggleSub(subKey)}
+                              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', cursor: 'pointer', background: isSubExpanded ? 'rgba(255, 255, 255, 0.02)' : 'transparent' }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                {isSubExpanded ? <ChevronDown size={16} color="var(--text-main)" /> : <ChevronRight size={16} color="var(--text-sub)" />}
+                                <Layers size={16} color="var(--text-sub)" />
+                                <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-main)' }}>{sub.name}</span>
+                              </div>
+                              <div style={{ display: 'flex', gap: '16px', fontSize: '13px', fontWeight: 600 }}>
+                                <span style={{ color: 'var(--text-sub)' }}>{sub.qty} pcs</span>
+                                <span style={{ color: 'var(--text-main)' }}>{sub.weight.toFixed(3)}g</span>
+                              </div>
+                            </div>
+
+                            {/* Variants List (Visible only when Subcategory is expanded) */}
+                            {isSubExpanded && (
+                              <div style={{ background: 'rgba(0, 0, 0, 0.15)', borderTop: '1px solid var(--border)', padding: '10px 16px' }}>
+                                <table style={{ width: '100%', fontSize: '13px' }}>
+                                  <thead>
+                                    <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                                      <th style={{ textAlign: 'left', padding: '6px 0', color: 'var(--text-sub)' }}>வகை (Variant)</th>
+                                      <th style={{ textAlign: 'right', padding: '6px 0', color: 'var(--text-sub)' }}>ஒற்றை எடை</th>
+                                      <th style={{ textAlign: 'right', padding: '6px 0', color: 'var(--text-sub)' }}>எண்ணிக்கை</th>
+                                      <th style={{ textAlign: 'right', padding: '6px 0', color: 'var(--text-sub)' }}>மொத்த எடை</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {Object.values(sub.variants).sort((a, b) => b.weight - a.weight).map(variant => (
+                                      <tr key={variant.name} style={{ borderBottom: '1px dashed rgba(255,255,255,0.03)' }}>
+                                        <td style={{ padding: '8px 0', fontWeight: 600 }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <Tag size={12} color="var(--gold)" />
+                                            {variant.name}
+                                          </div>
+                                        </td>
+                                        <td style={{ textAlign: 'right', padding: '8px 0', color: 'var(--text-sub)' }}>{variant.unitWeight.toFixed(3)}g</td>
+                                        <td style={{ textAlign: 'right', padding: '8px 0', fontWeight: 600 }}>{variant.qty} pcs</td>
+                                        <td style={{ textAlign: 'right', padding: '8px 0', fontWeight: 700, color: 'var(--gold)' }}>{variant.weight.toFixed(3)}g</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
