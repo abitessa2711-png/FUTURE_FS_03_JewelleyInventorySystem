@@ -187,7 +187,7 @@ export default function App() {
         setActiveTab('stock')
       }
       
-      const auditorForbiddenTabs = ['dashboard', 'sold', 'reports', 'old_buyback']
+      const auditorForbiddenTabs = ['dashboard', 'reports', 'old_buyback']
       if (user.role === 'auditor' && auditorForbiddenTabs.includes(activeTab)) {
         setActiveTab('stock')
       }
