@@ -107,22 +107,36 @@ export default function App() {
       .order('date', { ascending: true })
 
     if (salesList) {
-      setSoldItems(salesList.map(item => ({
-        id: item.id,
-        billId: item.bill_id,
-        customerName: item.customer_name,
-        mobile: item.mobile,
-        category: item.category,
-        subcategory: item.subcategory,
-        variant: item.variant,
-        detail: item.detail,
-        weight: parseFloat(item.weight || 0),
-        quantity: parseInt(item.quantity || 0),
-        pricePerGram: parseFloat(item.rate || 0),
-        discountAmount: parseFloat(item.discount_amount || 0),
-        total: parseFloat(item.amount || 0),
-        date: item.date
-      })))
+      setSoldItems(salesList.map(item => {
+        let extractedMetadata = {}
+        let cleanDetail = item.detail || ''
+        if (cleanDetail.includes('||METADATA||')) {
+          const parts = cleanDetail.split('||METADATA||')
+          cleanDetail = parts[0]
+          try {
+            extractedMetadata = JSON.parse(parts[1])
+          } catch(e) {
+            console.error('Metadata parsing failed:', e)
+          }
+        }
+        return {
+          id: item.id,
+          billId: item.bill_id,
+          customerName: item.customer_name,
+          mobile: item.mobile,
+          category: item.category,
+          subcategory: item.subcategory,
+          variant: item.variant,
+          detail: cleanDetail,
+          weight: parseFloat(item.weight || 0),
+          quantity: parseInt(item.quantity || 0),
+          pricePerGram: parseFloat(item.rate || 0),
+          discountAmount: parseFloat(item.discount_amount || 0),
+          total: parseFloat(item.amount || 0),
+          date: item.date,
+          metadata: extractedMetadata
+        };
+      }))
     }
 
     // 4. Fetch ledger
@@ -413,11 +427,13 @@ export default function App() {
   }
 
   // ── Sales (Process sale, deduct stock, log history) ───────────────────────
-  const processSale = async (customerName, mobile, cartItems, customDate) => {
+  const processSale = async (customerName, mobile, cartItems, customDate, metadata = {}) => {
     const billId = `TAS-${Date.now()}`
     const date = customDate || new Date().toISOString()
 
-    for (const item of cartItems) {
+    for (let i = 0; i < cartItems.length; i++) {
+      const item = cartItems[i]
+      
       // 1. Fetch current stock entry to ensure it exists and has sufficient balance
       const { data: stock, error: fetchErr } = await supabase
         .from('stock_entries')
@@ -445,6 +461,10 @@ export default function App() {
 
       if (updateErr) throw updateErr
 
+      const itemDetail = i === 0 
+        ? (item.detail || '') + '||METADATA||' + JSON.stringify(metadata)
+        : (item.detail || '')
+
       // 3. Create sales_entries record
       const { error: salesEntryErr } = await supabase
         .from('sales_entries')
@@ -454,7 +474,7 @@ export default function App() {
           variant_id: stock.variant_id,
           weight: item.weight,
           quantity: item.quantity,
-          detail: item.detail || '',
+          detail: itemDetail,
           created_at: date
         })
       if (salesEntryErr) throw salesEntryErr
@@ -481,7 +501,7 @@ export default function App() {
           category: item.category,
           subcategory: item.subcategory || null,
           variant: item.variant || null,
-          detail: item.detail || '',
+          detail: itemDetail,
           weight: item.weight,
           quantity: item.quantity,
           rate: item.pricePerGram,
@@ -493,7 +513,7 @@ export default function App() {
       if (saleHistoryErr) throw saleHistoryErr
     }
 
-    return { id: billId, customerName, mobile, items: cartItems, date }
+    return { id: billId, customerName, mobile, items: cartItems, date, metadata }
   }
 
   // ── Auth gates ─────────────────────────────────────────────────────────────

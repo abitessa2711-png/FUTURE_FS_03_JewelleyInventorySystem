@@ -1,7 +1,24 @@
 import React, { useState } from 'react'
 import { Receipt, Search, User, Trash2 } from 'lucide-react'
+import BillModal from './BillModal'
 
 const SoldItems = ({ soldItems = [], onDelete, role = 'admin' }) => {
+  const [selectedBill, setSelectedBill] = useState(null)
+
+  const handleViewBill = (billId) => {
+    const billItems = soldItems.filter(item => item.billId === billId)
+    if (billItems.length > 0) {
+      const firstItem = billItems[0]
+      setSelectedBill({
+        id: billId,
+        customerName: firstItem.customerName,
+        mobile: firstItem.mobile,
+        date: firstItem.date,
+        items: billItems,
+        metadata: firstItem.metadata || {}
+      })
+    }
+  }
   const [search, setSearch] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo,   setDateTo]   = useState('')
@@ -64,42 +81,52 @@ const SoldItems = ({ soldItems = [], onDelete, role = 'admin' }) => {
                 <th>Item</th>
                 <th className="hide-mobile">Category</th>
                 <th style={{ textAlign: 'right' }}>Qty | Wt</th>
-                {role === 'admin' && <th style={{ width: '60px', textAlign: 'center' }}>Action</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((s, i) => (
-                <tr key={i}>
-                  <td style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-sub)' }}>{i + 1}</td>
-                  <td style={{ fontSize: 12, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>
-                    {s.date ? new Date(s.date).toLocaleDateString('en-IN') : '—'}
-                  </td>
-                  <td className="hide-mobile" style={{ fontSize: 11, color: 'var(--text-sub)' }}>{s.billId || '—'}</td>
-                  <td>
-                    <div className="fw-600">{s.customerName || 'Walk-in'}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{s.mobile || ''}</div>
-                  </td>
-                  <td>
-                    <div className="fw-600">{s.variant}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{s.detail || ''}</div>
-                    <div className="show-mobile" style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: '2px' }}>
-                      {s.category}
-                    </div>
-                  </td>
-                  <td className="hide-mobile" style={{ fontSize: 13 }}>{s.category}</td>
-                  <td style={{ textAlign: 'right', fontSize: 13 }}>{s.quantity || 0} | {s.weight || 0}g</td>
-                  {role === 'admin' && (
-                    <td style={{ textAlign: 'center' }}>
-                      <button
-                        className="btn btn-danger-ghost"
-                        style={{ padding: '6px', minWidth: 'auto' }}
-                        onClick={() => window.confirm('இந்த விற்பனைப் பதிவை நீக்க வேண்டுமா? இது சரக்கு இருப்பை தானாகவே திரும்பப் பெறும்.') && onDelete(s.id)}
-                        title="Delete Sale"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                  <th style={{ width: '100px', textAlign: 'center' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((s, i) => (
+                  <tr key={i}>
+                    <td style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-sub)' }}>{i + 1}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>
+                      {s.date ? new Date(s.date).toLocaleDateString('en-IN') : '—'}
                     </td>
-                  )}
+                    <td className="hide-mobile" style={{ fontSize: 11, color: 'var(--text-sub)' }}>{s.billId || '—'}</td>
+                    <td>
+                      <div className="fw-600">{s.customerName || 'Walk-in'}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{s.mobile || ''}</div>
+                    </td>
+                    <td>
+                      <div className="fw-600">{s.variant}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{s.detail || ''}</div>
+                      <div className="show-mobile" style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: '2px' }}>
+                        {s.category}
+                      </div>
+                    </td>
+                    <td className="hide-mobile" style={{ fontSize: 13 }}>{s.category}</td>
+                    <td style={{ textAlign: 'right', fontSize: 13 }}>{s.quantity || 0} | {s.weight || 0}g</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
+                        <button
+                          className="btn btn-secondary-ghost"
+                          style={{ padding: '6px', minWidth: 'auto', height: '30px' }}
+                          onClick={() => handleViewBill(s.billId)}
+                          title="View / Print Bill"
+                        >
+                          <Receipt size={14} />
+                        </button>
+                        {role === 'admin' && (
+                          <button
+                            className="btn btn-danger-ghost"
+                            style={{ padding: '6px', minWidth: 'auto', height: '30px' }}
+                            onClick={() => window.confirm('இந்த விற்பனைப் பதிவை நீக்க வேண்டுமா? இது சரக்கு இருப்பை தானாகவே திரும்பப் பெறும்.') && onDelete(s.id)}
+                            title="Delete Sale"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
@@ -114,6 +141,7 @@ const SoldItems = ({ soldItems = [], onDelete, role = 'admin' }) => {
           </table>
         </div>
       </div>
+      {selectedBill && <BillModal bill={selectedBill} onClose={() => setSelectedBill(null)} />}
     </div>
   )
 }

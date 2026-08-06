@@ -19,6 +19,26 @@ const SellDashboard = ({ products = [], processSale }) => {
   const [saleDate, setSaleDate] = useState(() => {
     return new Date().toLocaleString('sv-SE').slice(0, 16).replace(' ', 'T')
   })
+  const [goldRate, setGoldRate] = useState(() => localStorage.getItem('today_gold_rate') || '')
+  const [silverRate, setSilverRate] = useState(() => localStorage.getItem('today_silver_rate') || '')
+  const [billDiscount, setBillDiscount] = useState('')
+  const [includeOldSilver, setIncludeOldSilver] = useState(false)
+  const [oldSilverWeight, setOldSilverWeight] = useState('')
+  const [oldSilverRate, setOldSilverRate] = useState('')
+  const [oldSilverAmount, setOldSilverAmount] = useState('')
+
+  const handleOldSilverWeightChange = (val) => {
+    setOldSilverWeight(val)
+    const w = parseFloat(val || 0)
+    const r = parseFloat(oldSilverRate || 0)
+    setOldSilverAmount((w * r).toFixed(2))
+  }
+  const handleOldSilverRateChange = (val) => {
+    setOldSilverRate(val)
+    const w = parseFloat(oldSilverWeight || 0)
+    const r = parseFloat(val || 0)
+    setOldSilverAmount((w * r).toFixed(2))
+  }
 
   const getSubs = () => formData.category ? Object.keys(MASTER_DATA[formData.category]) : []
   const getVariants = () => {
@@ -73,8 +93,8 @@ const SellDashboard = ({ products = [], processSale }) => {
   const addToCart = () => {
     const w = parseFloat(formData.weight || 0)
     const q = parseInt(formData.quantity || 0)
-    const r = 0
-    const dAmt = 0
+    const r = parseFloat(formData.rate || 0)
+    const dAmt = parseFloat(formData.discountAmt || 0)
     const gAmt = 0
     
     if (!selectedStockId || !availableStock) {
@@ -118,16 +138,33 @@ const SellDashboard = ({ products = [], processSale }) => {
     setWeightSearch('')
   }
 
-  const handleSale = async () => {
+  const handleSale = async (printAfterSave = true) => {
     if (!cart.length) return
     setLoading(true)
     try {
       const selectedIsoDate = new Date(saleDate).toISOString()
-      const bill = await processSale(customer.name || 'Walk-in', customer.mobile, cart, selectedIsoDate)
-      setShowBill(bill)
-      setLastBill(bill)
+      const metadata = {
+        goldRate: parseFloat(goldRate || 0),
+        silverRate: parseFloat(silverRate || 0),
+        billDiscount: parseFloat(billDiscount || 0),
+        oldSilverWeight: includeOldSilver ? parseFloat(oldSilverWeight || 0) : 0,
+        oldSilverRate: includeOldSilver ? parseFloat(oldSilverRate || 0) : 0,
+        oldSilverAmount: includeOldSilver ? parseFloat(oldSilverAmount || 0) : 0
+      }
+      const bill = await processSale(customer.name || 'Walk-in', customer.mobile, cart, selectedIsoDate, metadata)
+      if (printAfterSave) {
+        setShowBill(bill)
+        setLastBill(bill)
+      } else {
+        alert('விற்பனை விவரம் வெற்றிகரமாகச் சேமிக்கப்பட்டது!')
+      }
       setCart([])
       setCustomer({ name: '', mobile: '' })
+      setBillDiscount('')
+      setIncludeOldSilver(false)
+      setOldSilverWeight('')
+      setOldSilverRate('')
+      setOldSilverAmount('')
       setSaleDate(new Date().toLocaleString('sv-SE').slice(0, 16).replace(' ', 'T'))
     } catch (err) {
       alert('விற்பனை பிழை: ' + err.message)
@@ -175,7 +212,14 @@ const SellDashboard = ({ products = [], processSale }) => {
             <div className="form-group">
               <label>பிரிவு (Category)</label>
               <select value={formData.category} onChange={e => {
-                setFormData({ ...formData, category: e.target.value, subcategory: '', variant: '', detail: '' })
+                const cat = e.target.value;
+                let rateVal = '';
+                if (cat.toLowerCase().includes('gold') || cat.toLowerCase().includes('தங்கம்')) {
+                  rateVal = goldRate;
+                } else if (cat) {
+                  rateVal = silverRate;
+                }
+                setFormData({ ...formData, category: cat, subcategory: '', variant: '', detail: '', rate: rateVal })
                 setSelectedStockId('')
                 setWeightSearch('')
               }}>
@@ -226,6 +270,12 @@ const SellDashboard = ({ products = [], processSale }) => {
                   if (matches.length === 1) {
                     const s = matches[0];
                     setSelectedStockId(s.id.toString());
+                    let rateVal = '';
+                    if (s.category.toLowerCase().includes('gold') || s.category.toLowerCase().includes('தங்கம்')) {
+                      rateVal = goldRate;
+                    } else {
+                      rateVal = silverRate;
+                    }
                     setFormData({ 
                       ...formData, 
                       category: s.category,
@@ -233,7 +283,8 @@ const SellDashboard = ({ products = [], processSale }) => {
                       variant: s.variant,
                       detail: s.detail, 
                       weight: s.weight.toString(), 
-                      quantity: "1" 
+                      quantity: "1",
+                      rate: rateVal
                     });
                   }
                 }}
@@ -247,6 +298,12 @@ const SellDashboard = ({ products = [], processSale }) => {
                 setSelectedStockId(id);
                 const s = products.find(p => p.id === parseInt(id));
                 if (s) {
+                  let rateVal = '';
+                  if (s.category.toLowerCase().includes('gold') || s.category.toLowerCase().includes('தங்கம்')) {
+                    rateVal = goldRate;
+                  } else {
+                    rateVal = silverRate;
+                  }
                   setFormData({ 
                     ...formData, 
                     category: s.category,
@@ -254,7 +311,8 @@ const SellDashboard = ({ products = [], processSale }) => {
                     variant: s.variant,
                     detail: s.detail, 
                     weight: s.weight.toString(), 
-                    quantity: "1" 
+                    quantity: "1",
+                    rate: rateVal
                   });
                 }
               }} disabled={filteredStocks.length === 0}>
@@ -291,6 +349,12 @@ const SellDashboard = ({ products = [], processSale }) => {
                         type="button"
                         onClick={() => {
                           setSelectedStockId(s.id.toString());
+                          let rateVal = '';
+                          if (s.category.toLowerCase().includes('gold') || s.category.toLowerCase().includes('தங்கம்')) {
+                            rateVal = goldRate;
+                          } else {
+                            rateVal = silverRate;
+                          }
                           setFormData({ 
                             ...formData, 
                             category: s.category,
@@ -298,7 +362,8 @@ const SellDashboard = ({ products = [], processSale }) => {
                             variant: s.variant,
                             detail: s.detail, 
                             weight: s.weight.toString(), 
-                            quantity: "1" 
+                            quantity: "1",
+                            rate: rateVal
                           });
                         }}
                         style={{
@@ -379,6 +444,14 @@ const SellDashboard = ({ products = [], processSale }) => {
                 setFormData({ ...formData, quantity: e.target.value, weight: w.toString() });
               }} />
             </div>
+            <div className="form-group">
+              <label>விலை / கிராம் (Rate per Gram)</label>
+              <input type="number" step="0.01" value={formData.rate} onChange={e => setFormData({ ...formData, rate: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label>தள்ளுபடி (Discount Amt)</label>
+              <input type="number" step="0.01" value={formData.discountAmt} onChange={e => setFormData({ ...formData, discountAmt: e.target.value })} />
+            </div>
           </div>
 
           <button 
@@ -416,6 +489,91 @@ const SellDashboard = ({ products = [], processSale }) => {
             />
           </div>
 
+          {/* Daily Metal Rates */}
+          <div className="form-grid form-grid-2col mb-16">
+            <div className="form-group">
+              <label>இன்றைய தங்கம் விலை (Gold Rate/g)</label>
+              <input 
+                type="number" 
+                placeholder="0.00" 
+                value={goldRate} 
+                onChange={e => {
+                  setGoldRate(e.target.value);
+                  localStorage.setItem('today_gold_rate', e.target.value);
+                }} 
+              />
+            </div>
+            <div className="form-group">
+              <label>இன்றைய வெள்ளி விலை (Silver Rate/g)</label>
+              <input 
+                type="number" 
+                placeholder="0.00" 
+                value={silverRate} 
+                onChange={e => {
+                  setSilverRate(e.target.value);
+                  localStorage.setItem('today_silver_rate', e.target.value);
+                }} 
+              />
+            </div>
+          </div>
+
+          <div className="form-group mb-16">
+            <label>பில் தள்ளுபடி (Bill Discount Amount)</label>
+            <input 
+              type="number" 
+              placeholder="0.00" 
+              value={billDiscount} 
+              onChange={e => setBillDiscount(e.target.value)} 
+            />
+          </div>
+
+          {/* Old Silver Trade-in */}
+          <div style={{ marginBottom: '16px', background: 'rgba(255,255,255,0.01)', border: '1px dashed var(--border)', padding: '12px', borderRadius: '8px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '13px' }}>
+              <input 
+                type="checkbox" 
+                checked={includeOldSilver} 
+                onChange={e => setIncludeOldSilver(e.target.checked)} 
+              />
+              <span>பழைய வெள்ளி கழிவு (Old Silver Deduction)</span>
+            </label>
+            
+            {includeOldSilver && (
+              <div className="form-grid form-grid-3col" style={{ marginTop: '12px', gap: '8px' }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label style={{ fontSize: '11px' }}>எடை (Weight g)</label>
+                  <input 
+                    type="number" 
+                    step="0.001" 
+                    value={oldSilverWeight} 
+                    onChange={e => handleOldSilverWeightChange(e.target.value)} 
+                    style={{ height: '36px', fontSize: '13px' }}
+                  />
+                </div>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label style={{ fontSize: '11px' }}>விலை / கி (Rate/g)</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    value={oldSilverRate} 
+                    onChange={e => handleOldSilverRateChange(e.target.value)} 
+                    style={{ height: '36px', fontSize: '13px' }}
+                  />
+                </div>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label style={{ fontSize: '11px' }}>மதிப்பு (Amount)</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    value={oldSilverAmount} 
+                    onChange={e => setOldSilverAmount(e.target.value)} 
+                    style={{ height: '36px', fontSize: '13px' }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           <div style={{ minHeight: '200px', border: '1px solid var(--border)', borderRadius: 10, padding: '10px', background: 'rgba(0,0,0,0.01)', overflowY: 'auto', marginBottom: '15px' }}>
             {cart.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-sub)' }}>பட்டியல் காலியாக உள்ளது</div>
@@ -425,6 +583,8 @@ const SellDashboard = ({ products = [], processSale }) => {
                   <tr>
                     <th>Item</th>
                     <th style={{ textAlign: 'right' }}>Qty | Wt</th>
+                    <th style={{ textAlign: 'right' }}>Rate/g</th>
+                    <th style={{ textAlign: 'right' }}>Total</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -438,6 +598,8 @@ const SellDashboard = ({ products = [], processSale }) => {
                         </div>
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 600 }}>{item.quantity} pcs | {item.weight}g</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600 }}>₹{parseFloat(item.pricePerGram || 0).toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--gold)' }}>₹{parseFloat(item.total || 0).toFixed(2)}</td>
                       <td style={{ textAlign: 'right' }}>
                         <button className="btn btn-danger-ghost" style={{ padding: 4 }} onClick={() => setCart(cart.filter((_, i) => i !== idx))}><Trash2 size={14} /></button>
                       </td>
@@ -450,16 +612,59 @@ const SellDashboard = ({ products = [], processSale }) => {
 
           <div>
             <div style={{ margin: '15px 0', padding: '15px', background: 'rgba(212,175,55,0.04)', borderRadius: '10px', border: '1px solid var(--border)', marginBottom: '16px' }}>
-              <div className="flex-between fw-600" style={{ fontSize: '14px' }}>
+              <div className="flex-between fw-600" style={{ fontSize: '13px', color: 'var(--text-sub)' }}>
                 <span>மொத்த எண்ணிக்கை (Total Qty):</span><span>{cart.reduce((sum, item) => sum + (item.quantity || 0), 0)} pcs</span>
               </div>
-              <div className="flex-between fw-600" style={{ fontSize: '14px', marginTop: '6px' }}>
+              <div className="flex-between fw-600" style={{ fontSize: '13px', color: 'var(--text-sub)', marginTop: '4px' }}>
                 <span>மொத்த எடை (Total Weight):</span><span>{cart.reduce((sum, item) => sum + (parseFloat(item.weight) || 0), 0).toFixed(3)} g</span>
               </div>
+              <div style={{ borderTop: '1px solid var(--border)', margin: '8px 0' }} />
+              <div className="flex-between fw-600" style={{ fontSize: '13px', color: 'var(--text-sub)' }}>
+                <span>மொத்த மதிப்பு (Gross Total):</span><span>₹{cart.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0).toFixed(2)}</span>
+              </div>
+              {parseFloat(billDiscount || 0) > 0 && (
+                <div className="flex-between fw-600" style={{ fontSize: '13px', color: 'var(--danger)', marginTop: '4px' }}>
+                  <span>தள்ளுபடி (General Discount):</span><span>- ₹{parseFloat(billDiscount).toFixed(2)}</span>
+                </div>
+              )}
+              {includeOldSilver && parseFloat(oldSilverAmount || 0) > 0 && (
+                <div className="flex-between fw-600" style={{ fontSize: '13px', color: 'var(--success)', marginTop: '4px' }}>
+                  <span>பழைய வெள்ளி கழிவு:</span><span>- ₹{parseFloat(oldSilverAmount).toFixed(2)}</span>
+                </div>
+              )}
+              <div style={{ borderTop: '1px solid var(--border)', margin: '8px 0' }} />
+              <div className="flex-between fw-700" style={{ fontSize: '16px', color: 'var(--gold)' }}>
+                <span>நிகர மதிப்பு (Net Pay):</span>
+                <span>
+                  ₹{(
+                    cart.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0) -
+                    parseFloat(billDiscount || 0) -
+                    (includeOldSilver ? parseFloat(oldSilverAmount || 0) : 0)
+                  ).toFixed(2)}
+                </span>
+              </div>
             </div>
-            <button className="btn btn-primary btn-lg btn-full" disabled={!cart.length || loading} onClick={handleSale}>
-              <CreditCard size={18} /> {loading ? 'செயலாக்கப்படுகிறது...' : '💳 விற்பனை பற்றுச்சீட்டு (Log Sale)'}
-            </button>
+            
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button 
+                type="button"
+                className="btn btn-secondary btn-lg" 
+                style={{ flex: 1, padding: '10px 4px', fontSize: '12px' }}
+                disabled={!cart.length || loading} 
+                onClick={() => handleSale(false)}
+              >
+                பதிவு மட்டும் செய் (Save Only)
+              </button>
+              <button 
+                type="button"
+                className="btn btn-gold btn-lg" 
+                style={{ flex: 1.2, padding: '10px 4px', fontSize: '12px' }}
+                disabled={!cart.length || loading} 
+                onClick={() => handleSale(true)}
+              >
+                <CreditCard size={14} /> பில் செய்து அச்சிடு (Save & Print)
+              </button>
+            </div>
           </div>
         </div>
       </div>
