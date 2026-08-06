@@ -206,41 +206,39 @@ const SellDashboard = ({ products = [], processSale }) => {
               </select>
             </div>
 
-            {filteredStocks.length > 0 && (
-              <div className="form-group grid-span-2">
-                <label>இருப்புத் தேடல் (எடை/விவரம்/ID மூலம் தேட) / Search Stock (by Weight/Detail/ID)</label>
-                <input 
-                  type="text" 
-                  placeholder="எடை, விவரம் அல்லது ID-ஐ தட்டச்சு செய்யவும்..." 
-                  value={weightSearch} 
-                  onChange={e => {
-                    const val = e.target.value;
-                    setWeightSearch(val);
-                    const matches = products.filter(s => {
-                      const hasStock = s.weight > 0 || (s.quantity && s.quantity > 0);
-                      if (!hasStock) return false;
-                      return s.weight.toString().includes(val) || 
-                             s.weight.toFixed(3).includes(val) ||
-                             (s.detail && s.detail.toLowerCase().includes(val.toLowerCase())) ||
-                             s.id.toString() === val;
+            <div className="form-group grid-span-2">
+              <label>இருப்புத் தேடல் (எடை/விவரம்/ID மூலம் தேட) / Search Stock (by Weight/Detail/ID)</label>
+              <input 
+                type="text" 
+                placeholder="எடை, விவரம் அல்லது ID-ஐ தட்டச்சு செய்யவும்..." 
+                value={weightSearch} 
+                onChange={e => {
+                  const val = e.target.value;
+                  setWeightSearch(val);
+                  const matches = products.filter(s => {
+                    const hasStock = s.weight > 0 || (s.quantity && s.quantity > 0);
+                    if (!hasStock) return false;
+                    return s.weight.toString().includes(val) || 
+                           s.weight.toFixed(3).includes(val) ||
+                           (s.detail && s.detail.toLowerCase().includes(val.toLowerCase())) ||
+                           s.id.toString() === val;
+                  });
+                  if (matches.length === 1) {
+                    const s = matches[0];
+                    setSelectedStockId(s.id.toString());
+                    setFormData({ 
+                      ...formData, 
+                      category: s.category,
+                      subcategory: s.subcategory,
+                      variant: s.variant,
+                      detail: s.detail, 
+                      weight: s.weight.toString(), 
+                      quantity: "1" 
                     });
-                    if (matches.length === 1) {
-                      const s = matches[0];
-                      setSelectedStockId(s.id.toString());
-                      setFormData({ 
-                        ...formData, 
-                        category: s.category,
-                        subcategory: s.subcategory,
-                        variant: s.variant,
-                        detail: s.detail, 
-                        weight: s.weight.toString(), 
-                        quantity: "1" 
-                      });
-                    }
-                  }}
-                />
-              </div>
-            )}
+                  }
+                }}
+              />
+            </div>
 
             <div className="form-group grid-span-2">
               <label>இருப்புத் தெரிவு (Select Specific Stock) <span style={{ color: 'red' }}>*</span></label>
