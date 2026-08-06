@@ -38,15 +38,17 @@ const SellDashboard = ({ products = [], processSale }) => {
 
   // Derived: Filter products based on selected dropdown hierarchy.
   // If no category/subcategory/variant is selected, we include all available stocks.
-  const matchingStocks = products.filter(p => {
-    if (formData.category && p.category !== formData.category) return false
-    if (formData.subcategory && p.subcategory !== formData.subcategory) return false
-    if (formData.variant && p.variant !== formData.variant) return false
-    return p.weight > 0 || (p.quantity && p.quantity > 0)
-  })
+  const filteredStocks = products.filter(s => {
+    const hasStock = s.weight > 0 || (s.quantity && s.quantity > 0)
+    if (!hasStock) return false
 
-  const filteredStocks = matchingStocks.filter(s => {
-    if (!weightSearch) return true;
+    if (!weightSearch) {
+      if (formData.category && s.category !== formData.category) return false
+      if (formData.subcategory && s.subcategory !== formData.subcategory) return false
+      if (formData.variant && s.variant !== formData.variant) return false
+      return true
+    }
+
     const searchVal = weightSearch.trim().toLowerCase();
     return s.weight.toString().includes(searchVal) || 
            s.weight.toFixed(3).includes(searchVal) || 
@@ -204,7 +206,7 @@ const SellDashboard = ({ products = [], processSale }) => {
               </select>
             </div>
 
-            {matchingStocks.length > 0 && (
+            {filteredStocks.length > 0 && (
               <div className="form-group grid-span-2">
                 <label>இருப்புத் தேடல் (எடை/விவரம்/ID மூலம் தேட) / Search Stock (by Weight/Detail/ID)</label>
                 <input 
@@ -214,12 +216,14 @@ const SellDashboard = ({ products = [], processSale }) => {
                   onChange={e => {
                     const val = e.target.value;
                     setWeightSearch(val);
-                    const matches = matchingStocks.filter(s => 
-                      s.weight.toString().includes(val) || 
-                      s.weight.toFixed(3).includes(val) ||
-                      (s.detail && s.detail.toLowerCase().includes(val.toLowerCase())) ||
-                      s.id.toString() === val
-                    );
+                    const matches = products.filter(s => {
+                      const hasStock = s.weight > 0 || (s.quantity && s.quantity > 0);
+                      if (!hasStock) return false;
+                      return s.weight.toString().includes(val) || 
+                             s.weight.toFixed(3).includes(val) ||
+                             (s.detail && s.detail.toLowerCase().includes(val.toLowerCase())) ||
+                             s.id.toString() === val;
+                    });
                     if (matches.length === 1) {
                       const s = matches[0];
                       setSelectedStockId(s.id.toString());
@@ -255,8 +259,8 @@ const SellDashboard = ({ products = [], processSale }) => {
                     quantity: "1" 
                   });
                 }
-              }} disabled={matchingStocks.length === 0}>
-                <option value="">— {matchingStocks.length > 0 ? 'Select Stock Entry' : 'No Stock Available'} —</option>
+              }} disabled={filteredStocks.length === 0}>
+                <option value="">— {filteredStocks.length > 0 ? 'Select Stock Entry' : 'No Stock Available'} —</option>
                 {filteredStocks.slice(0, 100).map(s => (
                   <option key={s.id} value={s.id}>
                     ID: {s.id} | {getCategoryEmoji(s.category)} {s.category} {' > '} {s.subcategory} {' > '} {s.variant} | {s.detail || 'No Detail'} | {s.quantity} pcs | {s.weight}g
@@ -265,7 +269,7 @@ const SellDashboard = ({ products = [], processSale }) => {
               </select>
             </div>
 
-            {matchingStocks.length > 0 && (
+            {filteredStocks.length > 0 && (
               <div className="grid-span-2" style={{ marginTop: '-4px', marginBottom: '8px' }}>
                 <label style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '6px' }}>
                   இருப்பில் உள்ள பொருட்கள் (Available Items - Click to select):
