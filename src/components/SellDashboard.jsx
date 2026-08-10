@@ -40,10 +40,14 @@ const SellDashboard = ({ products = [], processSale }) => {
     setOldSilverAmount((w * r).toFixed(2))
   }
 
-  const getSubs = () => formData.category ? Object.keys(MASTER_DATA[formData.category]) : []
+  const getSubs = () => {
+    if (!formData.category || !MASTER_DATA[formData.category]) return []
+    return Object.keys(MASTER_DATA[formData.category])
+  }
   const getVariants = () => {
-    if (!formData.category || !formData.subcategory) return []
+    if (!formData.category || !formData.subcategory || !MASTER_DATA[formData.category]) return []
     const d = MASTER_DATA[formData.category][formData.subcategory]
+    if (!d) return []
     return Array.isArray(d) ? d : (typeof d === 'object' ? Object.keys(d) : [])
   }
 
@@ -59,7 +63,7 @@ const SellDashboard = ({ products = [], processSale }) => {
   // Derived: Filter products based on selected dropdown hierarchy.
   // If no category/subcategory/variant is selected, we include all available stocks.
   const filteredStocks = products.filter(s => {
-    const hasStock = s.weight > 0 || (s.quantity && s.quantity > 0)
+    const hasStock = (s.weight && s.weight > 0) || (s.quantity && s.quantity > 0)
     if (!hasStock) return false
 
     if (!weightSearch) {
@@ -70,10 +74,14 @@ const SellDashboard = ({ products = [], processSale }) => {
     }
 
     const searchVal = weightSearch.trim().toLowerCase();
-    return s.weight.toString().includes(searchVal) || 
-           s.weight.toFixed(3).includes(searchVal) || 
-           (s.detail && s.detail.toLowerCase().includes(searchVal)) ||
-           s.id.toString() === searchVal;
+    const sWeight = s.weight || 0;
+    const sDetail = s.detail || '';
+    const sId = s.id || '';
+    
+    return sWeight.toString().includes(searchVal) || 
+           sWeight.toFixed(3).includes(searchVal) || 
+           sDetail.toLowerCase().includes(searchVal) ||
+           sId.toString() === searchVal;
   });
 
   const availableStock = products.find(p => p.id === parseInt(selectedStockId))
@@ -260,18 +268,22 @@ const SellDashboard = ({ products = [], processSale }) => {
                   const val = e.target.value;
                   setWeightSearch(val);
                   const matches = products.filter(s => {
-                    const hasStock = s.weight > 0 || (s.quantity && s.quantity > 0);
+                    const hasStock = (s.weight && s.weight > 0) || (s.quantity && s.quantity > 0);
                     if (!hasStock) return false;
-                    return s.weight.toString().includes(val) || 
-                           s.weight.toFixed(3).includes(val) ||
-                           (s.detail && s.detail.toLowerCase().includes(val.toLowerCase())) ||
-                           s.id.toString() === val;
+                    const sWeight = s.weight || 0;
+                    const sDetail = s.detail || '';
+                    const sId = s.id || '';
+                    return sWeight.toString().includes(val) || 
+                           sWeight.toFixed(3).includes(val) ||
+                           sDetail.toLowerCase().includes(val.toLowerCase()) ||
+                           sId.toString() === val;
                   });
                   if (matches.length === 1) {
                     const s = matches[0];
                     setSelectedStockId(s.id.toString());
                     let rateVal = '';
-                    if (s.category.toLowerCase().includes('gold') || s.category.toLowerCase().includes('தங்கம்')) {
+                    const catLower = (s.category || '').toLowerCase();
+                    if (catLower.includes('gold') || catLower.includes('தங்கம்')) {
                       rateVal = goldRate;
                     } else {
                       rateVal = silverRate;
@@ -282,7 +294,7 @@ const SellDashboard = ({ products = [], processSale }) => {
                       subcategory: s.subcategory,
                       variant: s.variant,
                       detail: s.detail, 
-                      weight: s.weight.toString(), 
+                      weight: (s.weight || 0).toString(), 
                       quantity: "1",
                       rate: rateVal
                     });
@@ -299,7 +311,8 @@ const SellDashboard = ({ products = [], processSale }) => {
                 const s = products.find(p => p.id === parseInt(id));
                 if (s) {
                   let rateVal = '';
-                  if (s.category.toLowerCase().includes('gold') || s.category.toLowerCase().includes('தங்கம்')) {
+                  const catLower = (s.category || '').toLowerCase();
+                  if (catLower.includes('gold') || catLower.includes('தங்கம்')) {
                     rateVal = goldRate;
                   } else {
                     rateVal = silverRate;
@@ -310,7 +323,7 @@ const SellDashboard = ({ products = [], processSale }) => {
                     subcategory: s.subcategory,
                     variant: s.variant,
                     detail: s.detail, 
-                    weight: s.weight.toString(), 
+                    weight: (s.weight || 0).toString(), 
                     quantity: "1",
                     rate: rateVal
                   });
@@ -350,7 +363,8 @@ const SellDashboard = ({ products = [], processSale }) => {
                         onClick={() => {
                           setSelectedStockId(s.id.toString());
                           let rateVal = '';
-                          if (s.category.toLowerCase().includes('gold') || s.category.toLowerCase().includes('தங்கம்')) {
+                          const catLower = (s.category || '').toLowerCase();
+                          if (catLower.includes('gold') || catLower.includes('தங்கம்')) {
                             rateVal = goldRate;
                           } else {
                             rateVal = silverRate;
@@ -361,7 +375,7 @@ const SellDashboard = ({ products = [], processSale }) => {
                             subcategory: s.subcategory,
                             variant: s.variant,
                             detail: s.detail, 
-                            weight: s.weight.toString(), 
+                            weight: (s.weight || 0).toString(), 
                             quantity: "1",
                             rate: rateVal
                           });

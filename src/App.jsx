@@ -88,16 +88,25 @@ export default function App() {
       .order('created_at', { ascending: true })
 
     if (stocks) {
-      setProducts(stocks.map(item => ({
-        id: item.id,
-        category: item.categories?.name || '',
-        subcategory: item.subcategories?.name || '',
-        variant: item.variants?.name || '',
-        detail: item.detail || '',
-        weight: parseFloat(item.weight || 0),
-        quantity: parseInt(item.quantity || 0),
-        createdAt: item.created_at
-      })))
+      setProducts(stocks.map(item => {
+        let catName = item.categories?.name || '';
+        if (catName === 'கொலுசு') catName = 'கொலுசு அளவு';
+        else if (catName === 'கம்மல்') catName = 'வெள்ளி கம்மல்';
+        else if (catName === 'தாயத்து') catName = 'வெள்ளி தாயத்து';
+        else if (catName === 'காப்பு') catName = 'வெள்ளி காப்பு';
+        else if (catName === 'வெள்ளி டாலர்') catName = 'டாலர்';
+
+        return {
+          id: item.id,
+          category: catName,
+          subcategory: item.subcategories?.name || '',
+          variant: item.variants?.name || '',
+          detail: item.detail || '',
+          weight: parseFloat(item.weight || 0),
+          quantity: parseInt(item.quantity || 0),
+          createdAt: item.created_at
+        };
+      }))
     }
 
     // 3. Fetch sales history (Sales Module)
@@ -108,6 +117,13 @@ export default function App() {
 
     if (salesList) {
       setSoldItems(salesList.map(item => {
+        let catName = item.category || '';
+        if (catName === 'கொலுசு') catName = 'கொலுசு அளவு';
+        else if (catName === 'கம்மல்') catName = 'வெள்ளி கம்மல்';
+        else if (catName === 'தாயத்து') catName = 'வெள்ளி தாயத்து';
+        else if (catName === 'காப்பு') catName = 'வெள்ளி காப்பு';
+        else if (catName === 'வெள்ளி டாலர்') catName = 'டாலர்';
+
         let extractedMetadata = {}
         let cleanDetail = item.detail || ''
         if (cleanDetail.includes('||METADATA||')) {
@@ -124,7 +140,7 @@ export default function App() {
           billId: item.bill_id,
           customerName: item.customer_name,
           mobile: item.mobile,
-          category: item.category,
+          category: catName,
           subcategory: item.subcategory,
           variant: item.variant,
           detail: cleanDetail,

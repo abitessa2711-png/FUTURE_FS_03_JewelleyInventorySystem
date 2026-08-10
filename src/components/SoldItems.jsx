@@ -34,6 +34,7 @@ const SoldItems = ({ soldItems = [], onDelete, role = 'admin' }) => {
 
   const totalQuantity = filtered.reduce((s, i) => s + (i.quantity || 0), 0)
   const totalWeight = filtered.reduce((s, i) => s + (parseFloat(i.weight) || 0), 0)
+  const totalAmount = filtered.reduce((s, i) => s + (parseFloat(i.total) || 0), 0)
 
   return (
     <div className="animate-fade-in">
@@ -43,7 +44,8 @@ const SoldItems = ({ soldItems = [], onDelete, role = 'admin' }) => {
           <p className="text-sub">
             {filtered.length} பரிவர்த்தனைகள் (Transactions) · 
             மொத்த எண்ணிக்கை: {totalQuantity} pcs · 
-            மொத்த எடை: {totalWeight.toFixed(3)}g
+            மொத்த எடை: {totalWeight.toFixed(3)}g · 
+            மொத்த மதிப்பு: ₹{totalAmount.toFixed(2)}
           </p>
         </div>
       </div>
@@ -80,7 +82,8 @@ const SoldItems = ({ soldItems = [], onDelete, role = 'admin' }) => {
                 <th>Customer</th>
                 <th>Item</th>
                 <th className="hide-mobile">Category</th>
-                <th style={{ textAlign: 'right' }}>Qty | Wt</th>
+                  <th style={{ textAlign: 'right' }}>Qty | Wt</th>
+                  <th style={{ textAlign: 'right' }}>Amount</th>
                   <th style={{ width: '100px', textAlign: 'center' }}>Actions</th>
                 </tr>
               </thead>
@@ -105,6 +108,7 @@ const SoldItems = ({ soldItems = [], onDelete, role = 'admin' }) => {
                     </td>
                     <td className="hide-mobile" style={{ fontSize: 13 }}>{s.category}</td>
                     <td style={{ textAlign: 'right', fontSize: 13 }}>{s.quantity || 0} | {s.weight || 0}g</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--gold)', fontSize: 13 }}>₹{(s.total || 0).toFixed(2)}</td>
                     <td style={{ textAlign: 'center' }}>
                       <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
                         <button
