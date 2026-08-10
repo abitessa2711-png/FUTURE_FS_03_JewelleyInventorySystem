@@ -68,6 +68,14 @@ const BillModal = ({ bill, onClose }) => {
             </div>
           </div>
 
+          {/* Today's Metal Rates */}
+          {(parseFloat(bill.metadata?.goldRate || 0) > 0 || parseFloat(bill.metadata?.silverRate || 0) > 0) && (
+            <div style={{ display: 'flex', gap: '20px', marginBottom: '16px', background: '#f8fafc', padding: '8px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', fontWeight: 600, color: '#334155' }}>
+              {parseFloat(bill.metadata?.goldRate || 0) > 0 && <div>🟡 இன்றைய தங்கம் விலை: <strong>₹{parseFloat(bill.metadata.goldRate).toFixed(2)}/g</strong></div>}
+              {parseFloat(bill.metadata?.silverRate || 0) > 0 && <div>⚪ இன்றைய வெள்ளி விலை: <strong>₹{parseFloat(bill.metadata.silverRate).toFixed(2)}/g</strong></div>}
+            </div>
+          )}
+
           {/* Items Table */}
           <div style={{ marginBottom: '24px', overflow: 'hidden', border: '1px solid #e2e8f0', borderRadius: '10px' }}>
             <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse' }}>
