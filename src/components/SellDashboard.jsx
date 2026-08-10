@@ -7,7 +7,7 @@ const CATEGORIES = Object.keys(MASTER_DATA)
 
 const SellDashboard = ({ products = [], processSale }) => {
   const [formData, setFormData] = useState({
-    category: '', subcategory: '', variant: '', detail: '', weight: '', quantity: '', rate: '', discountAmt: '', gstAmt: ''
+    category: '', subcategory: '', variant: '', detail: '', weight: '', quantity: '', rate: '', itemTotal: '', discountAmt: '', gstAmt: ''
   })
   const [customer, setCustomer] = useState({ name: '', mobile: '' })
   const [cart, setCart] = useState([])
@@ -40,6 +40,67 @@ const SellDashboard = ({ products = [], processSale }) => {
     setOldSilverAmount((w * r).toFixed(2))
   }
 
+  const handleWeightChange = (newWeight) => {
+    const w = parseFloat(newWeight || 0)
+    const r = parseFloat(formData.rate || 0)
+    let total = formData.itemTotal
+    if (r > 0 && w > 0) {
+      total = (w * r).toFixed(2)
+    }
+    setFormData(prev => ({ ...prev, weight: newWeight, itemTotal: total }))
+  }
+
+  const handleRateChange = (newRate) => {
+    const r = parseFloat(newRate || 0)
+    const w = parseFloat(formData.weight || 0)
+    let total = formData.itemTotal
+    if (w > 0 && r > 0) {
+      total = (w * r).toFixed(2)
+    }
+    setFormData(prev => ({ ...prev, rate: newRate, itemTotal: total }))
+  }
+
+  const handleItemTotalChange = (newTotal) => {
+    const t = parseFloat(newTotal || 0)
+    const w = parseFloat(formData.weight || 0)
+    let r = formData.rate
+    if (w > 0 && t > 0) {
+      r = (t / w).toFixed(2)
+    }
+    setFormData(prev => ({ ...prev, itemTotal: newTotal, rate: r }))
+  }
+
+  const updateCartItemTotal = (index, newTotal) => {
+    setCart(prev => prev.map((item, idx) => {
+      if (idx !== index) return item
+      const totalNum = parseFloat(newTotal || 0)
+      const w = parseFloat(item.weight || 0)
+      const r = w > 0 ? (totalNum / w) : item.pricePerGram
+      return {
+        ...item,
+        total: totalNum,
+        subtotal: totalNum + (parseFloat(item.discountAmount) || 0),
+        pricePerGram: r
+      }
+    }))
+  }
+
+  const updateCartItemRate = (index, newRate) => {
+    setCart(prev => prev.map((item, idx) => {
+      if (idx !== index) return item
+      const r = parseFloat(newRate || 0)
+      const w = parseFloat(item.weight || 0)
+      const sub = w * r
+      const d = parseFloat(item.discountAmount || 0)
+      return {
+        ...item,
+        pricePerGram: r,
+        subtotal: sub,
+        total: Math.max(0, sub - d)
+      }
+    }))
+  }
+
   const getSubs = () => {
     if (!formData.category || !MASTER_DATA[formData.category]) return []
     return Object.keys(MASTER_DATA[formData.category])
@@ -52,7 +113,6 @@ const SellDashboard = ({ products = [], processSale }) => {
   }
 
   // Helper to determine product category emoji for premium look
-  // Helper to determine product category emoji for premium look
   const getCategoryEmoji = (cat) => {
     const c = (cat || '').toLowerCase()
     if (c.includes('gold') || c.includes('தங்கம்')) return '🟡'
@@ -61,7 +121,6 @@ const SellDashboard = ({ products = [], processSale }) => {
   }
 
   // Derived: Filter products based on selected dropdown hierarchy.
-  // If no category/subcategory/variant is selected, we include all available stocks.
   const filteredStocks = products.filter(s => {
     const hasStock = (s.weight && s.weight > 0) || (s.quantity && s.quantity > 0)
     if (!hasStock) return false
@@ -88,20 +147,18 @@ const SellDashboard = ({ products = [], processSale }) => {
 
   const handleReset = () => {
     setFormData({
-      category: '', subcategory: '', variant: '', detail: '', weight: '', quantity: '', rate: '', discountAmt: '', gstAmt: ''
+      category: '', subcategory: '', variant: '', detail: '', weight: '', quantity: '', rate: '', itemTotal: '', discountAmt: '', gstAmt: ''
     })
     setSelectedStockId('')
     setWeightSearch('')
   }
 
-  const weight = parseFloat(formData.weight || 0)
-  const rate = parseFloat(formData.rate || 0)
-  const finalItemTotal = weight * rate
-
   const addToCart = () => {
     const w = parseFloat(formData.weight || 0)
     const q = parseInt(formData.quantity || 0)
     const r = parseFloat(formData.rate || 0)
+    const manualTotal = parseFloat(formData.itemTotal || 0)
+    const sub = manualTotal > 0 ? manualTotal : (w * r)
     const dAmt = parseFloat(formData.discountAmt || 0)
     const gAmt = 0
     
@@ -125,15 +182,15 @@ const SellDashboard = ({ products = [], processSale }) => {
       }
     }
 
-    const sub = w * r
-    const total = sub - dAmt + gAmt
+    const total = Math.max(0, sub - dAmt + gAmt)
+    const pricePerGram = w > 0 ? (sub / w) : r
 
     setCart([...cart, { 
       ...formData, 
       productId: availableStock.id,
       weight: w, 
       quantity: q,
-      pricePerGram: r,
+      pricePerGram: pricePerGram,
       subtotal: sub,
       discountAmount: dAmt,
       gstAmount: gAmt,
@@ -141,7 +198,7 @@ const SellDashboard = ({ products = [], processSale }) => {
     }])
     
     // Reset selection part
-    setFormData({ ...formData, weight: '', quantity: '', rate: '', discountAmt: '' })
+    setFormData({ ...formData, weight: '', quantity: '', rate: '', itemTotal: '', discountAmt: '' })
     setSelectedStockId('')
     setWeightSearch('')
   }
@@ -288,6 +345,9 @@ const SellDashboard = ({ products = [], processSale }) => {
                     } else {
                       rateVal = silverRate;
                     }
+                    const wt = parseFloat(s.weight || 0);
+                    const rt = parseFloat(rateVal || 0);
+                    const tot = (wt > 0 && rt > 0) ? (wt * rt).toFixed(2) : '';
                     setFormData({ 
                       ...formData, 
                       category: s.category,
@@ -296,7 +356,8 @@ const SellDashboard = ({ products = [], processSale }) => {
                       detail: s.detail, 
                       weight: (s.weight || 0).toString(), 
                       quantity: "1",
-                      rate: rateVal
+                      rate: rateVal,
+                      itemTotal: tot
                     });
                   }
                 }}
@@ -317,6 +378,9 @@ const SellDashboard = ({ products = [], processSale }) => {
                   } else {
                     rateVal = silverRate;
                   }
+                  const wt = parseFloat(s.weight || 0);
+                  const rt = parseFloat(rateVal || 0);
+                  const tot = (wt > 0 && rt > 0) ? (wt * rt).toFixed(2) : '';
                   setFormData({ 
                     ...formData, 
                     category: s.category,
@@ -325,7 +389,8 @@ const SellDashboard = ({ products = [], processSale }) => {
                     detail: s.detail, 
                     weight: (s.weight || 0).toString(), 
                     quantity: "1",
-                    rate: rateVal
+                    rate: rateVal,
+                    itemTotal: tot
                   });
                 }
               }} disabled={filteredStocks.length === 0}>
@@ -369,6 +434,9 @@ const SellDashboard = ({ products = [], processSale }) => {
                           } else {
                             rateVal = silverRate;
                           }
+                          const wt = parseFloat(s.weight || 0);
+                          const rt = parseFloat(rateVal || 0);
+                          const tot = (wt > 0 && rt > 0) ? (wt * rt).toFixed(2) : '';
                           setFormData({ 
                             ...formData, 
                             category: s.category,
@@ -377,7 +445,8 @@ const SellDashboard = ({ products = [], processSale }) => {
                             detail: s.detail, 
                             weight: (s.weight || 0).toString(), 
                             quantity: "1",
-                            rate: rateVal
+                            rate: rateVal,
+                            itemTotal: tot
                           });
                         }}
                         style={{
@@ -421,7 +490,7 @@ const SellDashboard = ({ products = [], processSale }) => {
                   இருப்பில் உள்ளது (Click to fill):{' '}
                   <span 
                     style={{ cursor: 'pointer', background: 'rgba(197, 160, 94, 0.15)', color: 'var(--gold)', padding: '2px 6px', borderRadius: '4px', marginRight: '6px', fontWeight: 600 }}
-                    onClick={() => setFormData({ ...formData, weight: availableStock.weight.toString() })}
+                    onClick={() => handleWeightChange(availableStock.weight.toString())}
                     title="Use Weight"
                   >
                     {availableStock.weight}g
@@ -429,7 +498,10 @@ const SellDashboard = ({ products = [], processSale }) => {
                   |{' '}
                   <span 
                     style={{ cursor: 'pointer', background: 'rgba(197, 160, 94, 0.15)', color: 'var(--gold)', padding: '2px 6px', borderRadius: '4px', marginLeft: '6px', fontWeight: 600 }}
-                    onClick={() => setFormData({ ...formData, quantity: availableStock.quantity.toString(), weight: availableStock.weight.toString() })}
+                    onClick={() => {
+                      handleWeightChange(availableStock.weight.toString());
+                      setFormData(prev => ({ ...prev, quantity: availableStock.quantity.toString() }));
+                    }}
                     title="Use Quantity"
                   >
                     {availableStock.quantity} pcs
@@ -439,7 +511,10 @@ const SellDashboard = ({ products = [], processSale }) => {
                   type="button" 
                   className="btn btn-ghost" 
                   style={{ height: '24px', fontSize: '11px', padding: '0 8px', borderRadius: '4px' }}
-                  onClick={() => setFormData({ ...formData, weight: availableStock.weight.toString(), quantity: availableStock.quantity.toString() })}
+                  onClick={() => {
+                    handleWeightChange(availableStock.weight.toString());
+                    setFormData(prev => ({ ...prev, quantity: availableStock.quantity.toString() }));
+                  }}
                 >
                   இரண்டையும் போடு (Use Both)
                 </button>
@@ -448,23 +523,35 @@ const SellDashboard = ({ products = [], processSale }) => {
 
             <div className="form-group">
               <label>விற்கப்படும் எடை (Weight g)</label>
-              <input type="number" step="0.001" value={formData.weight} onChange={e => setFormData({ ...formData, weight: e.target.value })} />
+              <input type="number" step="0.001" value={formData.weight} onChange={e => handleWeightChange(e.target.value)} />
             </div>
             <div className="form-group">
               <label>விற்கப்படும் எண்ணிக்கை (Qty)</label>
               <input type="number" value={formData.quantity} onChange={e => {
                 const q = parseInt(e.target.value || 0);
                 const w = availableStock ? (q * availableStock.weight) : 0;
-                setFormData({ ...formData, quantity: e.target.value, weight: w.toString() });
+                handleWeightChange(w > 0 ? w.toString() : formData.weight);
+                setFormData(prev => ({ ...prev, quantity: e.target.value }));
               }} />
             </div>
             <div className="form-group">
-              <label>விலை / கிராம் (Rate per Gram)</label>
-              <input type="number" step="0.01" value={formData.rate} onChange={e => setFormData({ ...formData, rate: e.target.value })} />
+              <label>விலை / கிராம் (Rate/g)</label>
+              <input type="number" step="0.01" placeholder="0.00" value={formData.rate} onChange={e => handleRateChange(e.target.value)} />
             </div>
             <div className="form-group">
-              <label>தள்ளுபடி (Discount Amt)</label>
-              <input type="number" step="0.01" value={formData.discountAmt} onChange={e => setFormData({ ...formData, discountAmt: e.target.value })} />
+              <label>மொத்த விலை (Piece Total ₹)</label>
+              <input 
+                type="number" 
+                step="0.01" 
+                placeholder="0.00" 
+                value={formData.itemTotal} 
+                onChange={e => handleItemTotalChange(e.target.value)} 
+                style={{ borderColor: formData.itemTotal ? 'var(--gold)' : 'var(--border)', fontWeight: 600, color: formData.itemTotal ? 'var(--gold)' : 'var(--text-main)' }}
+              />
+            </div>
+            <div className="form-group grid-span-2">
+              <label>தள்ளுபடி (Item Discount ₹)</label>
+              <input type="number" step="0.01" placeholder="0.00" value={formData.discountAmt} onChange={e => setFormData({ ...formData, discountAmt: e.target.value })} />
             </div>
           </div>
 
@@ -548,6 +635,7 @@ const SellDashboard = ({ products = [], processSale }) => {
                 type="checkbox" 
                 checked={includeOldSilver} 
                 onChange={e => setIncludeOldSilver(e.target.checked)} 
+                style={{ width: '18px', height: '18px', accentColor: 'var(--gold)', cursor: 'pointer' }}
               />
               <span>பழைய வெள்ளி கழிவு (Old Silver Deduction)</span>
             </label>
@@ -597,9 +685,9 @@ const SellDashboard = ({ products = [], processSale }) => {
                   <tr>
                     <th>Item</th>
                     <th style={{ textAlign: 'right' }}>Qty | Wt</th>
-                    <th style={{ textAlign: 'right' }}>Rate/g</th>
-                    <th style={{ textAlign: 'right' }}>Total</th>
-                    <th></th>
+                    <th style={{ width: '100px', textAlign: 'right' }}>Rate/g</th>
+                    <th style={{ width: '110px', textAlign: 'right' }}>Total ₹</th>
+                    <th style={{ width: '30px' }}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -612,8 +700,28 @@ const SellDashboard = ({ products = [], processSale }) => {
                         </div>
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 600 }}>{item.quantity} pcs | {item.weight}g</td>
-                      <td style={{ textAlign: 'right', fontWeight: 600 }}>₹{parseFloat(item.pricePerGram || 0).toFixed(2)}</td>
-                      <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--gold)' }}>₹{parseFloat(item.total || 0).toFixed(2)}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <input 
+                          type="number" 
+                          step="0.01" 
+                          placeholder="Rate" 
+                          value={item.pricePerGram || ''} 
+                          onChange={e => updateCartItemRate(idx, e.target.value)}
+                          style={{ width: '85px', height: '30px', textAlign: 'right', padding: '2px 6px', fontSize: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: '4px', color: 'var(--text-main)' }}
+                          title="Click to edit rate per gram"
+                        />
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <input 
+                          type="number" 
+                          step="0.01" 
+                          placeholder="Total ₹" 
+                          value={item.total || ''} 
+                          onChange={e => updateCartItemTotal(idx, e.target.value)}
+                          style={{ width: '95px', height: '30px', textAlign: 'right', padding: '2px 6px', fontSize: '13px', fontWeight: 700, background: 'rgba(197, 160, 94, 0.1)', border: '1px solid var(--gold)', borderRadius: '4px', color: 'var(--gold)' }}
+                          title="Click to manually edit piece total price"
+                        />
+                      </td>
                       <td style={{ textAlign: 'right' }}>
                         <button className="btn btn-danger-ghost" style={{ padding: 4 }} onClick={() => setCart(cart.filter((_, i) => i !== idx))}><Trash2 size={14} /></button>
                       </td>
