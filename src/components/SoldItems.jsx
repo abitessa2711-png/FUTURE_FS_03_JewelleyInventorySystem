@@ -23,18 +23,22 @@ const SoldItems = ({ soldItems = [], onDelete, role = 'admin' }) => {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo,   setDateTo]   = useState('')
 
-  const filtered = soldItems.filter(s => {
-    const q = search.toLowerCase()
+  const filtered = (soldItems || []).filter(s => {
+    if (!s) return false
+    const q = (search || '').trim().toLowerCase()
     const d = s.date ? s.date.split('T')[0] : ''
-    const matchQ = !q || [s.customerName, s.variant, s.category, s.mobile].some(v => (v || '').toLowerCase().includes(q))
+    const matchQ = !q || [s.customerName, s.variant, s.category, s.mobile].some(v => {
+      if (v === null || v === undefined) return false;
+      return String(v).toLowerCase().includes(q);
+    })
     const matchFrom = !dateFrom || d >= dateFrom
     const matchTo   = !dateTo   || d <= dateTo
     return matchQ && matchFrom && matchTo
   }).slice().reverse()
 
   const totalQuantity = filtered.reduce((s, i) => s + (i.quantity || 0), 0)
-  const totalWeight = filtered.reduce((s, i) => s + (parseFloat(i.weight) || 0), 0)
-  const totalAmount = filtered.reduce((s, i) => s + (parseFloat(i.total) || 0), 0)
+  const totalWeight = filtered.reduce((s, i) => s + (parseFloat(i.weight || 0) || 0), 0)
+  const totalAmount = filtered.reduce((s, i) => s + (parseFloat(i.total || 0) || 0), 0)
 
   return (
     <div className="animate-fade-in">
@@ -44,8 +48,8 @@ const SoldItems = ({ soldItems = [], onDelete, role = 'admin' }) => {
           <p className="text-sub">
             {filtered.length} பரிவர்த்தனைகள் (Transactions) · 
             மொத்த எண்ணிக்கை: {totalQuantity} pcs · 
-            மொத்த எடை: {totalWeight.toFixed(3)}g · 
-            மொத்த மதிப்பு: ₹{totalAmount.toFixed(2)}
+            மொத்த எடை: {Number(totalWeight).toFixed(3)}g · 
+            மொத்த மதிப்பு: ₹{Number(totalAmount).toFixed(2)}
           </p>
         </div>
       </div>
@@ -108,7 +112,7 @@ const SoldItems = ({ soldItems = [], onDelete, role = 'admin' }) => {
                     </td>
                     <td className="hide-mobile" style={{ fontSize: 13 }}>{s.category}</td>
                     <td style={{ textAlign: 'right', fontSize: 13 }}>{s.quantity || 0} | {s.weight || 0}g</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--gold)', fontSize: 13 }}>₹{(s.total || 0).toFixed(2)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--gold)', fontSize: 13 }}>₹{Number(s.total || 0).toFixed(2)}</td>
                     <td style={{ textAlign: 'center' }}>
                       <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
                         <button
