@@ -7,36 +7,48 @@ const BillModal = ({ bill, onClose }) => {
   const items = bill.items || []
   
   // Calculate Totals
-  const grossTotal = items.reduce((s, i) => s + (i.total || (i.weight * i.pricePerGram) || 0), 0)
+  const grossTotal = items.reduce((s, i) => s + (parseFloat(i.total) || (parseFloat(i.weight || 0) * parseFloat(i.pricePerGram || 0)) || 0), 0)
   const discountVal = parseFloat(bill.metadata?.billDiscount || 0)
   const oldSilverWeight = parseFloat(bill.metadata?.oldSilverWeight || 0)
-  const oldSilverRate = parseFloat(bill.metadata?.oldSilverRate || 0)
   const oldSilverAmount = parseFloat(bill.metadata?.oldSilverAmount || 0)
-  const netTotal = grossTotal - discountVal - oldSilverAmount
+  const netTotal = Math.max(0, grossTotal - discountVal - oldSilverAmount)
 
   return (
-    <div className="modal-overlay no-print-overlay">
-      <div className="modal-content animate-fade-in print-bill-container" onClick={e => e.stopPropagation()} style={{ width: '850px', maxWidth: '95vw', padding: 0 }}>
+    <div className="modal-overlay no-print-overlay" style={{ background: 'rgba(0, 0, 0, 0.75)', zIndex: 9999 }}>
+      <div 
+        className="modal-content animate-fade-in print-bill-container" 
+        onClick={e => e.stopPropagation()} 
+        style={{ 
+          width: '820px', 
+          maxWidth: '96vw', 
+          padding: 0, 
+          background: '#ffffff', 
+          color: '#1e293b', 
+          borderRadius: '16px',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          overflow: 'hidden'
+        }}
+      >
         
         {/* Printable Card Area */}
-        <div style={{ padding: '35px' }}>
+        <div style={{ padding: '36px', background: '#ffffff', color: '#0f172a' }}>
           
           {/* Header containing Logo & Address */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid var(--gold)', paddingBottom: '16px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid #b45309', paddingBottom: '16px', marginBottom: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <img 
                 src={logoImg} 
                 alt="TAS Logo" 
-                style={{ width: '75px', height: '75px', borderRadius: '50%', border: '2px solid var(--gold)', objectFit: 'cover' }} 
+                style={{ width: '75px', height: '75px', borderRadius: '50%', border: '2px solid #b45309', objectFit: 'cover' }} 
               />
               <div>
-                <h2 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--gold)', margin: 0, letterSpacing: '0.5px' }}>TAS JEWELLERS</h2>
-                <div style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 600, letterSpacing: '1px' }}>AUTHENTIC GOLD & SILVER ORNAMENTS</div>
+                <h2 style={{ fontSize: '26px', fontWeight: 800, color: '#92400e', margin: 0, letterSpacing: '0.5px' }}>TAS JEWELLERS</h2>
+                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, letterSpacing: '1px' }}>AUTHENTIC GOLD & SILVER ORNAMENTS</div>
               </div>
             </div>
             
-            <div style={{ textAlign: 'right', fontSize: '12px', lineHeight: '1.5', color: 'var(--text-main)', fontWeight: 500 }}>
-              <strong style={{ color: 'var(--gold)', fontSize: '14px' }}>TAS JEWELLERS</strong><br />
+            <div style={{ textAlign: 'right', fontSize: '12px', lineHeight: '1.5', color: '#334155', fontWeight: 500 }}>
+              <strong style={{ color: '#92400e', fontSize: '14px' }}>TAS JEWELLERS</strong><br />
               85, திருத்தங்கல் ரோடு<br />
               சிவகாசி - 626123 (தேவர் சிலை எதிரில்)<br />
               Ph: 9597258369, 7867807337
@@ -44,51 +56,41 @@ const BillModal = ({ bill, onClose }) => {
           </div>
 
           {/* Customer / Invoice Details */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', margin: '15px 0', fontSize: '13px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border)', padding: '14px', borderRadius: '10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', margin: '16px 0', fontSize: '13px', background: '#f8fafc', border: '1px solid #e2e8f0', padding: '14px 18px', borderRadius: '10px' }}>
             <div>
-              <div style={{ color: 'var(--text-sub)', fontSize: '11px', marginBottom: '2px', fontWeight: 600 }}>INVOICE TO</div>
-              <strong style={{ fontSize: '16px' }}>{bill.customerName || 'Walk-in'}</strong>
-              {bill.mobile && <div style={{ marginTop: '2px', color: 'var(--text-sub)' }}>Ph: {bill.mobile}</div>}
+              <div style={{ color: '#64748b', fontSize: '11px', marginBottom: '2px', fontWeight: 700 }}>INVOICE TO</div>
+              <strong style={{ fontSize: '16px', color: '#0f172a' }}>{bill.customerName || 'Walk-in'}</strong>
+              {bill.mobile && <div style={{ marginTop: '2px', color: '#64748b' }}>Ph: {bill.mobile}</div>}
             </div>
             <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div>பில் எண் (Invoice No): <strong>{bill.id || 'N/A'}</strong></div>
-              <div style={{ marginTop: '2px' }}>தேதி (Date): <strong>{bill.date ? new Date(bill.date).toLocaleString('en-IN') : new Date().toLocaleString('en-IN')}</strong></div>
+              <div style={{ color: '#334155' }}>பில் எண் (Invoice No): <strong style={{ color: '#0f172a' }}>{bill.id || 'N/A'}</strong></div>
+              <div style={{ marginTop: '3px', color: '#334155' }}>தேதி (Date): <strong style={{ color: '#0f172a' }}>{bill.date ? new Date(bill.date).toLocaleString('en-IN') : new Date().toLocaleString('en-IN')}</strong></div>
             </div>
           </div>
 
-          {/* Today's Metal Rates display inside invoice */}
-          {(bill.metadata?.goldRate > 0 || bill.metadata?.silverRate > 0) && (
-            <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', background: 'rgba(197, 160, 94, 0.05)', padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(197, 160, 94, 0.2)', fontSize: '12px', fontWeight: 600 }}>
-              {bill.metadata?.goldRate > 0 && <div>🟡 இன்றைய தங்கம் விலை (Gold Rate): ₹{bill.metadata.goldRate.toFixed(2)}/g</div>}
-              {bill.metadata?.silverRate > 0 && <div>⚪ இன்றைய வெள்ளி விலை (Silver Rate): ₹{bill.metadata.silverRate.toFixed(2)}/g</div>}
-            </div>
-          )}
-
           {/* Items Table */}
-          <div className="table-wrap" style={{ marginBottom: '25px', overflow: 'hidden', border: '1px solid var(--border)', borderRadius: '8px' }}>
+          <div style={{ marginBottom: '24px', overflow: 'hidden', border: '1px solid #e2e8f0', borderRadius: '10px' }}>
             <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1.5px solid var(--border)' }}>
-                  <th style={{ width: '50px', padding: '10px 12px', textAlign: 'left' }}>S.No</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left' }}>பொருள் விவரம் (Item Details)</th>
-                  <th style={{ width: '80px', padding: '10px 12px', textAlign: 'center' }}>Qty</th>
-                  <th style={{ width: '100px', padding: '10px 12px', textAlign: 'right' }}>Weight</th>
-                  <th style={{ width: '110px', padding: '10px 12px', textAlign: 'right' }}>Rate/g</th>
-                  <th style={{ width: '120px', padding: '10px 12px', textAlign: 'right' }}>Total</th>
+                <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1', color: '#334155' }}>
+                  <th style={{ width: '50px', padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>வ.எண்</th>
+                  <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>பொருள் விவரம் (Item Details)</th>
+                  <th style={{ width: '90px', padding: '12px 14px', textAlign: 'center', fontWeight: 700 }}>எண்ணிக்கை</th>
+                  <th style={{ width: '110px', padding: '12px 14px', textAlign: 'right', fontWeight: 700 }}>எடை (Weight)</th>
+                  <th style={{ width: '130px', padding: '12px 14px', textAlign: 'right', fontWeight: 700 }}>தொகை (Amount)</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((item, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '10px 12px', color: 'var(--text-sub)' }}>{idx + 1}</td>
-                    <td style={{ padding: '10px 12px' }}>
-                      <strong style={{ fontSize: '14px' }}>{item.variant || item.subcategory}</strong>
-                      <div style={{ fontSize: '11px', color: 'var(--text-sub)' }}>{item.category} {item.detail && `- ${item.detail}`}</div>
+                  <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '12px 14px', color: '#64748b', fontWeight: 600 }}>{idx + 1}</td>
+                    <td style={{ padding: '12px 14px' }}>
+                      <strong style={{ fontSize: '14px', color: '#0f172a' }}>{item.variant || item.subcategory}</strong>
+                      <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{item.category} {item.detail && ` · ${item.detail}`}</div>
                     </td>
-                    <td style={{ textAlign: 'center', padding: '10px 12px', fontWeight: 600 }}>{item.quantity || 0} pcs</td>
-                    <td style={{ textAlign: 'right', padding: '10px 12px', fontWeight: 600 }}>{parseFloat(item.weight || 0).toFixed(3)}g</td>
-                    <td style={{ textAlign: 'right', padding: '10px 12px' }}>₹{parseFloat(item.pricePerGram || 0).toFixed(2)}</td>
-                    <td style={{ textAlign: 'right', padding: '10px 12px', fontWeight: 700, color: 'var(--gold)' }}>₹{parseFloat(item.total || 0).toFixed(2)}</td>
+                    <td style={{ textAlign: 'center', padding: '12px 14px', fontWeight: 600, color: '#0f172a' }}>{item.quantity || 0} pcs</td>
+                    <td style={{ textAlign: 'right', padding: '12px 14px', fontWeight: 600, color: '#0f172a' }}>{parseFloat(item.weight || 0).toFixed(3)}g</td>
+                    <td style={{ textAlign: 'right', padding: '12px 14px', fontWeight: 700, fontSize: '14px', color: '#92400e' }}>₹{parseFloat(item.total || 0).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -97,50 +99,50 @@ const BillModal = ({ bill, onClose }) => {
 
           {/* Footer Summary */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: '10px' }}>
-            <div style={{ fontSize: '11px', color: 'var(--text-sub)', width: '45%', lineHeight: '1.6' }}>
-              <strong style={{ fontSize: '12px', color: 'var(--text-main)' }}>TERMS & CONDITIONS:</strong><br />
-              1. No returns or exchanges on silver/gold items once sold.<br />
-              2. All disputes are subject to Sivakasi jurisdiction.<br />
-              3. Quality 100% guaranteed as per hallmark standards.
+            <div style={{ fontSize: '11px', color: '#64748b', width: '45%', lineHeight: '1.6' }}>
+              <strong style={{ fontSize: '12px', color: '#0f172a' }}>விதிமுறைகள் (TERMS & CONDITIONS):</strong><br />
+              1. விற்ற நகைகள் திரும்பப் பெறப்பட மாட்டாது.<br />
+              2. அனைத்துப் பிணக்குகளும் சிவகாசி நீதிமன்ற எல்லைக்குட்பட்டவை.<br />
+              3. 100% தூய தரம் உத்திரவாதம் அளிக்கப்படுகிறது.
             </div>
             
-            <div style={{ width: '340px', background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border)' }}>
-              <div className="flex-between" style={{ fontSize: '13px', color: 'var(--text-sub)', marginBottom: '6px' }}>
+            <div style={{ width: '350px', background: '#f8fafc', padding: '16px 20px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#475569', marginBottom: '8px' }}>
                 <span>மொத்த மதிப்பு (Gross Total):</span>
-                <span className="fw-600 text-main">₹{grossTotal.toFixed(2)}</span>
+                <span style={{ fontWeight: 700, color: '#0f172a' }}>₹{grossTotal.toFixed(2)}</span>
               </div>
               {discountVal > 0 && (
-                <div className="flex-between" style={{ fontSize: '13px', color: 'var(--danger)', marginBottom: '6px' }}>
-                  <span>பில் தள்ளுபடி (Bill Discount):</span>
-                  <span className="fw-600">- ₹{discountVal.toFixed(2)}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#dc2626', marginBottom: '8px' }}>
+                  <span>பில் தள்ளுபடி (Discount):</span>
+                  <span style={{ fontWeight: 700 }}>- ₹{discountVal.toFixed(2)}</span>
                 </div>
               )}
               {oldSilverAmount > 0 && (
-                <div className="flex-between" style={{ fontSize: '13px', color: 'var(--success)', marginBottom: '6px' }}>
-                  <span>பழைய வெள்ளி கழிவு ({oldSilverWeight}g @ ₹{oldSilverRate}):</span>
-                  <span className="fw-600">- ₹{oldSilverAmount.toFixed(2)}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#16a34a', marginBottom: '8px' }}>
+                  <span>பழைய வெள்ளி கழிவு {oldSilverWeight > 0 ? `(${oldSilverWeight}g)` : ''}:</span>
+                  <span style={{ fontWeight: 700 }}>- ₹{oldSilverAmount.toFixed(2)}</span>
                 </div>
               )}
-              <div style={{ borderTop: '1px solid var(--border)', margin: '8px 0' }} />
-              <div className="flex-between fw-700" style={{ fontSize: '17px', color: 'var(--gold)' }}>
-                <span>நிகர மதிப்பு (Net Pay):</span>
+              <div style={{ borderTop: '2px solid #cbd5e1', margin: '10px 0' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: 800, color: '#92400e' }}>
+                <span>நிகரத் தொகை (Net Pay):</span>
                 <span>₹{netTotal.toFixed(2)}</span>
               </div>
             </div>
           </div>
 
-          <div style={{ textAlign: 'center', marginTop: '35px', color: 'var(--text-sub)', fontSize: '12px', fontWeight: 600 }}>
+          <div style={{ textAlign: 'center', marginTop: '30px', color: '#64748b', fontSize: '12px', fontWeight: 700 }}>
             நன்றி! மீண்டும் வருக — THANK YOU!
           </div>
         </div>
 
         {/* Action Buttons - Hidden during printing */}
-        <div className="flex no-print" style={{ justifyContent: 'center', gap: '12px', padding: '20px', background: 'var(--bg)', borderTop: '1px solid var(--border)', borderRadius: '0 0 20px 20px' }}>
-          <button className="btn btn-ghost" onClick={onClose} style={{ width: '120px' }}>மூடு (Close)</button>
+        <div className="flex no-print" style={{ justifyContent: 'center', gap: '12px', padding: '16px', background: '#f1f5f9', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn btn-ghost" onClick={onClose} style={{ width: '120px', color: '#475569', borderColor: '#cbd5e1' }}>மூடு (Close)</button>
           <button 
             className="btn btn-gold" 
             onClick={() => window.print()} 
-            style={{ width: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            style={{ width: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: '#b45309', color: '#ffffff', fontWeight: 700 }}
           >
             <Printer size={16} /> பில் பிரிண்ட் செய் (Print)
           </button>
@@ -151,3 +153,4 @@ const BillModal = ({ bill, onClose }) => {
 }
 
 export default BillModal
+
