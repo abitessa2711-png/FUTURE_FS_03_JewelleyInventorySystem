@@ -7,7 +7,7 @@ const CATEGORIES = Object.keys(MASTER_DATA)
 
 const SellDashboard = ({ products = [], processSale }) => {
   const [formData, setFormData] = useState({
-    category: '', subcategory: '', variant: '', detail: '', weight: '', quantity: '', itemTotal: '', discountAmt: ''
+    category: '', subcategory: '', variant: '', detail: '', weight: '', quantity: '', itemTotal: '', oldSilverAmt: ''
   })
   const [customer, setCustomer] = useState({ name: '', mobile: '' })
   const [cart, setCart] = useState([])
@@ -24,7 +24,7 @@ const SellDashboard = ({ products = [], processSale }) => {
   const [goldRate, setGoldRate] = useState(() => localStorage.getItem('today_gold_rate') || '')
   const [silverRate, setSilverRate] = useState(() => localStorage.getItem('today_silver_rate') || '')
   
-  // Old Silver Trade-in state
+  // Old Silver Trade-in state (overall trade-in)
   const [includeOldSilver, setIncludeOldSilver] = useState(false)
   const [oldSilverWeight, setOldSilverWeight] = useState('')
   const [oldSilverAmount, setOldSilverAmount] = useState('')
@@ -89,7 +89,7 @@ const SellDashboard = ({ products = [], processSale }) => {
 
   const handleReset = () => {
     setFormData({
-      category: '', subcategory: '', variant: '', detail: '', weight: '', quantity: '', itemTotal: '', discountAmt: ''
+      category: '', subcategory: '', variant: '', detail: '', weight: '', quantity: '', itemTotal: '', oldSilverAmt: ''
     })
     setSelectedStockId('')
     setWeightSearch('')
@@ -99,7 +99,7 @@ const SellDashboard = ({ products = [], processSale }) => {
     const w = parseFloat(formData.weight || 0)
     const q = parseInt(formData.quantity || 0)
     const manualTotal = parseFloat(formData.itemTotal || 0)
-    const dAmt = parseFloat(formData.discountAmt || 0)
+    const oldSilAmt = parseFloat(formData.oldSilverAmt || 0)
     
     if (!selectedStockId || !availableStock) {
       alert('இந்த பொருள் இருப்பில் இல்லை')
@@ -121,7 +121,7 @@ const SellDashboard = ({ products = [], processSale }) => {
       }
     }
 
-    const total = Math.max(0, manualTotal - dAmt)
+    const total = Math.max(0, manualTotal - oldSilAmt)
 
     setCart([...cart, { 
       ...formData, 
@@ -129,12 +129,12 @@ const SellDashboard = ({ products = [], processSale }) => {
       weight: w, 
       quantity: q,
       subtotal: manualTotal,
-      discountAmount: dAmt,
+      oldSilverAmt: oldSilAmt,
       total: total 
     }])
     
     // Reset selection part
-    setFormData({ ...formData, weight: '', quantity: '', itemTotal: '', discountAmt: '' })
+    setFormData({ ...formData, weight: '', quantity: '', itemTotal: '', oldSilverAmt: '' })
     setSelectedStockId('')
     setWeightSearch('')
   }
@@ -146,7 +146,7 @@ const SellDashboard = ({ products = [], processSale }) => {
       return {
         ...item,
         total: totalNum,
-        subtotal: totalNum + (parseFloat(item.discountAmount) || 0)
+        subtotal: totalNum + (parseFloat(item.oldSilverAmt) || 0)
       }
     }))
   }
@@ -182,9 +182,11 @@ const SellDashboard = ({ products = [], processSale }) => {
     }
   }
 
-  const grossTotal = cart.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0)
-  const oldSilverVal = includeOldSilver ? parseFloat(oldSilverAmount || 0) : 0
-  const netTotal = Math.max(0, grossTotal - oldSilverVal)
+  const grossTotal = cart.reduce((sum, item) => sum + (parseFloat(item.subtotal) || parseFloat(item.total) || 0), 0)
+  const itemOldSilverTotal = cart.reduce((sum, item) => sum + (parseFloat(item.oldSilverAmt) || 0), 0)
+  const tradeInOldSilver = includeOldSilver ? parseFloat(oldSilverAmount || 0) : 0
+  const totalOldSilverDeduction = itemOldSilverTotal + tradeInOldSilver
+  const netTotal = Math.max(0, grossTotal - totalOldSilverDeduction)
 
   return (
     <div className="animate-fade-in">
@@ -474,13 +476,14 @@ const SellDashboard = ({ products = [], processSale }) => {
               />
             </div>
             <div className="form-group grid-span-2">
-              <label>தள்ளுபடி (Item Discount ₹ - Optional)</label>
+              <label>பழைய வெள்ளி தொகை (Old Silver Amount ₹ - Optional)</label>
               <input 
                 type="number" 
                 step="0.01" 
                 placeholder="0.00" 
-                value={formData.discountAmt} 
-                onChange={e => setFormData({ ...formData, discountAmt: e.target.value })} 
+                value={formData.oldSilverAmt} 
+                onChange={e => setFormData({ ...formData, oldSilverAmt: e.target.value })} 
+                style={{ borderColor: formData.oldSilverAmt ? 'var(--success)' : 'var(--border)', fontWeight: 600, color: formData.oldSilverAmt ? 'var(--success)' : 'var(--text-main)' }}
               />
             </div>
           </div>
@@ -559,7 +562,7 @@ const SellDashboard = ({ products = [], processSale }) => {
                 onChange={e => setIncludeOldSilver(e.target.checked)} 
                 style={{ width: '18px', height: '18px', accentColor: 'var(--gold)', cursor: 'pointer', margin: 0 }}
               />
-              <span>பழைய வெள்ளி கழிவு (Old Silver Deduction)</span>
+              <span>பழைய வெள்ளி கழிவு (Old Silver Trade-in Deduction)</span>
             </label>
             
             {includeOldSilver && (
@@ -646,9 +649,9 @@ const SellDashboard = ({ products = [], processSale }) => {
               <div className="flex-between fw-600" style={{ fontSize: '14px', color: 'var(--text-main)' }}>
                 <span>மொத்த மதிப்பு (Gross Total):</span><span>₹{grossTotal.toFixed(2)}</span>
               </div>
-              {includeOldSilver && oldSilverVal > 0 && (
+              {totalOldSilverDeduction > 0 && (
                 <div className="flex-between fw-600" style={{ fontSize: '13px', color: 'var(--success)', marginTop: '4px' }}>
-                  <span>பழைய வெள்ளி கழிவு {oldSilverWeight ? `(${oldSilverWeight}g)` : ''}:</span><span>- ₹{oldSilverVal.toFixed(2)}</span>
+                  <span>பழைய வெள்ளி கழிவு {oldSilverWeight ? `(${oldSilverWeight}g)` : ''}:</span><span>- ₹{totalOldSilverDeduction.toFixed(2)}</span>
                 </div>
               )}
               <div style={{ borderTop: '2px solid var(--border)', margin: '10px 0' }} />

@@ -7,11 +7,12 @@ const BillModal = ({ bill, onClose }) => {
   const items = bill.items || []
   
   // Calculate Totals
-  const grossTotal = items.reduce((s, i) => s + (parseFloat(i.total) || (parseFloat(i.weight || 0) * parseFloat(i.pricePerGram || 0)) || 0), 0)
-  const discountVal = parseFloat(bill.metadata?.billDiscount || 0)
+  const grossTotal = items.reduce((s, i) => s + (parseFloat(i.subtotal) || parseFloat(i.total) || 0), 0)
+  const itemOldSilver = items.reduce((s, i) => s + (parseFloat(i.oldSilverAmt) || 0), 0)
+  const tradeInOldSilver = parseFloat(bill.metadata?.oldSilverAmount || 0)
   const oldSilverWeight = parseFloat(bill.metadata?.oldSilverWeight || 0)
-  const oldSilverAmount = parseFloat(bill.metadata?.oldSilverAmount || 0)
-  const netTotal = Math.max(0, grossTotal - discountVal - oldSilverAmount)
+  const totalOldSilver = itemOldSilver + tradeInOldSilver
+  const netTotal = Math.max(0, grossTotal - totalOldSilver)
 
   return (
     <div className="modal-overlay no-print-overlay" style={{ background: 'rgba(0, 0, 0, 0.75)', zIndex: 9999 }}>
@@ -119,16 +120,10 @@ const BillModal = ({ bill, onClose }) => {
                 <span>மொத்த மதிப்பு (Gross Total):</span>
                 <span style={{ fontWeight: 700, color: '#0f172a' }}>₹{grossTotal.toFixed(2)}</span>
               </div>
-              {discountVal > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#dc2626', marginBottom: '8px' }}>
-                  <span>பில் தள்ளுபடி (Discount):</span>
-                  <span style={{ fontWeight: 700 }}>- ₹{discountVal.toFixed(2)}</span>
-                </div>
-              )}
-              {oldSilverAmount > 0 && (
+              {totalOldSilver > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#16a34a', marginBottom: '8px' }}>
                   <span>பழைய வெள்ளி கழிவு {oldSilverWeight > 0 ? `(${oldSilverWeight}g)` : ''}:</span>
-                  <span style={{ fontWeight: 700 }}>- ₹{oldSilverAmount.toFixed(2)}</span>
+                  <span style={{ fontWeight: 700 }}>- ₹{totalOldSilver.toFixed(2)}</span>
                 </div>
               )}
               <div style={{ borderTop: '2px solid #cbd5e1', margin: '10px 0' }} />
