@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { Trash2, Search, Filter } from 'lucide-react'
+import { Trash2, Search, Filter, Calendar, RotateCcw } from 'lucide-react'
 
 const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedSubcategory, setSelectedSubcategory] = useState('')
   const [selectedVariant, setSelectedVariant] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
 
   const availableProducts = (products || []).filter(p => (p.quantity || 0) > 0)
 
@@ -50,12 +52,18 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
     }
   }, [selectedCategory, selectedSubcategory, availableProducts])
 
-  // Filter products based on search query and selected category, subcategory, and variant
+  // Filter products based on search query, category, subcategory, variant, and date range
   const filteredProducts = availableProducts.filter(p => {
     const matchesCategory = selectedCategory ? p.category === selectedCategory : true
     const matchesSubcategory = selectedSubcategory ? p.subcategory === selectedSubcategory : true
     const matchesVariant = selectedVariant ? p.variant === selectedVariant : true
     
+    // Date filter
+    const itemDate = p.createdAt ? p.createdAt.split('T')[0] : ''
+    const matchesDateFrom = !dateFrom || (itemDate && itemDate >= dateFrom)
+    const matchesDateTo = !dateTo || (itemDate && itemDate <= dateTo)
+
+    if (!matchesDateFrom || !matchesDateTo) return false
     if (!searchQuery) return matchesCategory && matchesSubcategory && matchesVariant
 
     // Tokenize search query by spaces to support searching Category, Subcategory, and Variant together
@@ -76,6 +84,17 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
   const totalWeight = filteredProducts.reduce((s, p) => s + ((p.quantity || 0) * (parseFloat(p.weight) || 0)), 0)
   const totalQuantity = filteredProducts.reduce((s, p) => s + (p.quantity || 0), 0)
 
+  const handleClearFilters = () => {
+    setSearchQuery('')
+    setSelectedCategory('')
+    setSelectedSubcategory('')
+    setSelectedVariant('')
+    setDateFrom('')
+    setDateTo('')
+  }
+
+  const hasActiveFilters = Boolean(searchQuery || selectedCategory || selectedSubcategory || selectedVariant || dateFrom || dateTo)
+
   return (
     <div className="animate-fade-in">
       <div className="flex-between mb-16">
@@ -89,7 +108,7 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
 
       {/* Search and Filter Card */}
       <div className="card mb-16" style={{ padding: '16px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', alignItems: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', alignItems: 'center', marginBottom: '12px' }}>
           
           <div className="search-input-wrap" style={{ margin: 0, width: '100%' }}>
             <span className="search-icon">
@@ -173,11 +192,49 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
           )}
 
         </div>
+
+        {/* Date Range Calendar Filter */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, color: 'var(--text-sub)' }}>
+            <Calendar size={16} color="var(--gold)" />
+            <span>தேதி வடிகட்டி (Date Range):</span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0 10px', height: '36px' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>முதல் (From):</span>
+            <input 
+              type="date" 
+              value={dateFrom} 
+              onChange={e => setDateFrom(e.target.value)} 
+              style={{ border: 'none', background: 'transparent', height: '100%', fontSize: '12px', outline: 'none', color: 'var(--text-main)', cursor: 'pointer' }} 
+            />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0 10px', height: '36px' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>வரை (To):</span>
+            <input 
+              type="date" 
+              value={dateTo} 
+              onChange={e => setDateTo(e.target.value)} 
+              style={{ border: 'none', background: 'transparent', height: '100%', fontSize: '12px', outline: 'none', color: 'var(--text-main)', cursor: 'pointer' }} 
+            />
+          </div>
+
+          {hasActiveFilters && (
+            <button 
+              className="btn btn-ghost" 
+              style={{ height: '36px', fontSize: '12px', padding: '0 12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+              onClick={handleClearFilters}
+            >
+              <RotateCcw size={13} /> Reset Filters
+            </button>
+          )}
+        </div>
       </div>
 
       {filteredProducts.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '60px', color: 'var(--text-sub)' }}>
-          தகவல் இல்லை — No matching stock found.
+          தகவல் இல்லை — No matching stock found for the selected filters.
         </div>
       ) : (
         <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
@@ -185,7 +242,11 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
             <table style={{ borderCollapse: 'collapse', width: '100%' }}>
               <thead>
                 <tr>
-                  <th className="hide-mobile" style={{ width: '60px', textAlign: 'center' }}>வ.எண்</th>
+                  <th className="hide-mobile" style={{ width: '50px', textAlign: 'center' }}>வ.எண்</th>
+                  <th className="hide-mobile" style={{ width: '100px' }}>
+                    தேதி<br />
+                    <span style={{ fontSize: '10px', opacity: 0.7, fontWeight: 'normal', textTransform: 'none' }}>Date</span>
+                  </th>
                   <th className="hide-mobile">
                     பிரிவு<br />
                     <span style={{ fontSize: '10px', opacity: 0.7, fontWeight: 'normal', textTransform: 'none' }}>Category</span>
@@ -208,7 +269,7 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
                     <span style={{ fontSize: '10px', opacity: 0.7, fontWeight: 'normal', textTransform: 'none' }}>Total g</span>
                   </th>
                   {role === 'admin' && (
-                    <th style={{ width: '80px', textAlign: 'center' }}>
+                    <th style={{ width: '70px', textAlign: 'center' }}>
                       செயல்<br />
                       <span style={{ fontSize: '10px', opacity: 0.7, fontWeight: 'normal', textTransform: 'none' }}>Action</span>
                     </th>
@@ -221,6 +282,9 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
                   return (
                     <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
                       <td className="hide-mobile" style={{ textAlign: 'center', color: 'var(--text-sub)', fontWeight: 500 }}>{idx + 1}</td>
+                      <td className="hide-mobile" style={{ fontSize: '12px', color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>
+                        {item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-IN') : '—'}
+                      </td>
                       <td className="hide-mobile">
                         <span style={{
                           background: 'rgba(212, 175, 55, 0.08)',
@@ -248,6 +312,9 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
                             {item.detail}
                           </div>
                         )}
+                        <div className="show-mobile" style={{ fontSize: '10px', color: 'var(--text-sub)', marginTop: '2px' }}>
+                          {item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-IN') : ''}
+                        </div>
                       </td>
                       <td className="hide-mobile" style={{ color: 'var(--text-sub)' }}>{item.detail || '—'}</td>
                       <td style={{ textAlign: 'right', fontWeight: 500 }}>

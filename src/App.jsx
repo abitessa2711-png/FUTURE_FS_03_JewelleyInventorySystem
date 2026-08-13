@@ -330,85 +330,114 @@ export default function App() {
   }
 
   const deleteSale = async (saleId) => {
-    // 1. Fetch the sale details first
-    const { data: saleData, error: fetchErr } = await supabase
-      .from('sales')
-      .select('*')
-      .eq('id', saleId)
-      .single()
-
-    if (fetchErr || !saleData) {
-      console.error("Error fetching sale to delete:", fetchErr)
-      alert("Error fetching sale details.")
-      return
-    }
-
     try {
-      // 2. Look up the ID for categories, subcategories, variants to find the stock entry
-      const catId = dbCategories.find(c => c.name === saleData.category)?.id
-      const subId = dbSubcategories.find(s => s.name === saleData.subcategory)?.id || null
-      const varId = dbVariants.find(v => v.name === saleData.variant)?.id || null
-
-      // Find matching stock entry
-      const { data: stockEntries } = await supabase
-        .from('stock_entries')
+      // 1. Fetch the sale details first
+      const { data: saleData, error: fetchErr } = await supabase
+        .from('sales')
         .select('*')
-        .eq('category_id', catId)
-        .eq('subcategory_id', subId || null)
-        .eq('variant_id', varId || null)
-        .eq('detail', saleData.detail || '')
-        .eq('weight', saleData.weight)
+        .eq('id', saleId)
+        .single()
 
-      if (stockEntries && stockEntries.length > 0) {
-        const matchedStock = stockEntries[0]
-        const restoredQty = (matchedStock.quantity || 0) + (saleData.quantity || 0)
-        const restoredWeight = saleData.weight
-
-        // Update stock entry
-        const { error: updateErr } = await supabase
-          .from('stock_entries')
-          .update({ quantity: restoredQty, weight: restoredWeight })
-          .eq('id', matchedStock.id)
-
-        if (updateErr) console.error("Error updating stock during sale deletion:", updateErr)
-      } else {
-        // Recreate stock entry if it was completely deleted
-        const { error: insertErr } = await supabase
-          .from('stock_entries')
-          .insert({
-            category_id: catId,
-            subcategory_id: subId || null,
-            variant_id: varId || null,
-            detail: saleData.detail || '',
-            weight: saleData.weight,
-            quantity: saleData.quantity || 0
-          })
-        if (insertErr) console.error("Error recreating stock entry during sale deletion:", insertErr)
+      if (fetchErr || !saleData) {
+        console.error("Error fetching sale to delete:", fetchErr)
+        alert("விற்பனை விவரத்தை மீட்டெடுக்க முடியவில்லை.")
+        return
       }
 
-      // 3. Delete the sale from sales table
+      // Clean the detail (strip ||METADATA||...)
+      const cleanDetail = (saleData.detail || '').split('||METADATA||')[0].trim()
+
+      // Normalize category name for DB lookup
+      const normalizeCat = (cat) => {
+        if (!cat) return ''
+        if (cat === 'கொலுசு அளவு') return 'கொலுசு'
+        if (cat === 'வெள்ளி கம்மல்') return 'கம்மல்'
+        if (cat === 'வெள்ளி தாயத்து') return 'தாயத்து'
+        if (cat === 'வெள்ளி காப்பு') return 'காப்பு'
+        if (cat === 'டாலர்') return 'வெள்ளி டாலர்'
+        return cat
+      }
+
+      const rawCatName = normalizeCat(saleData.category)
+      let cat = dbCategories.find(c => c.name === saleData.category || c.name === rawCatName)
+      if (!cat && saleData.category) {
+        cat = dbCategories.find(c => c.name.toLowerCase() === saleData.category.toLowerCase() || c.name.toLowerCase() === rawCatName.toLowerCase())
+      }
+      const catId = cat ? cat.id : null
+
+      const sub = dbSubcategories.find(s => s.name === saleData.subcategory && (!catId || s.category_id === catId))
+      const subId = sub ? sub.id : null
+
+      const v = dbVariants.find(vr => vr.name === saleData.variant && (!catId || vr.category_id === catId))
+      const varId = v ? v.id : null
+
+      const saleWeight = parseFloat(saleData.weight || 0)
+      const saleQty = parseInt(saleData.quantity || 1)
+
+      // 2. Restore Stock in stock_entries if category is known
+      if (catId) {
+        const { data: catStocks } = await supabase
+          .from('stock_entries')
+          .select('*')
+          .eq('category_id', catId)
+
+        const matchedStock = (catStocks || []).find(st => {
+          const matchSub = (!subId && !st.subcategory_id) || (st.subcategory_id === subId)
+          const matchVar = (!varId && !st.variant_id) || (st.variant_id === varId)
+          const stDetail = (st.detail || '').split('||METADATA||')[0].trim()
+          const matchDetail = stDetail === cleanDetail || (!cleanDetail && !stDetail)
+          const matchWeight = Math.abs((parseFloat(st.weight) || 0) - saleWeight) < 0.001
+          return matchSub && matchVar && matchDetail && matchWeight
+        })
+
+        if (matchedStock) {
+          const restoredQty = (parseInt(matchedStock.quantity) || 0) + saleQty
+          const restoredWeight = saleWeight > 0 ? saleWeight : parseFloat(matchedStock.weight || 0)
+
+          await supabase
+            .from('stock_entries')
+            .update({ quantity: restoredQty, weight: restoredWeight })
+            .eq('id', matchedStock.id)
+        } else {
+          await supabase
+            .from('stock_entries')
+            .insert({
+              category_id: catId,
+              subcategory_id: subId,
+              variant_id: varId,
+              detail: cleanDetail,
+              weight: saleWeight,
+              quantity: saleQty
+            })
+        }
+      }
+
+      // 3. Delete from sales table
       const { error: deleteSaleErr } = await supabase
         .from('sales')
         .delete()
         .eq('id', saleId)
+
       if (deleteSaleErr) throw deleteSaleErr
 
-      // 4. Delete related ledger entry of type SELL matching the criteria
-      await supabase
-        .from('ledger')
-        .delete()
-        .eq('type', 'SELL')
-        .eq('category_name', saleData.category)
-        .eq('subcategory_name', saleData.subcategory)
-        .eq('variant_name', saleData.variant)
-        .eq('weight', saleData.weight)
-        
-      // 5. Reload data to update UI
+      // 4. Optionally cleanup matching ledger SELL record if exists
+      if (saleData.date) {
+        await supabase
+          .from('ledger')
+          .delete()
+          .eq('type', 'SELL')
+          .eq('created_at', saleData.date)
+      }
+
+      // 5. Update local state immediately for instant feedback
+      setSoldItems(prev => prev.filter(item => item.id !== saleId))
+
+      // 6. Reload full data from DB
       await loadData()
-      alert("விற்பனை பதிவு வெற்றிகரமாக நீக்கப்பட்டது மற்றும் சரக்கு இருப்பு சரிசெய்யப்பட்டது.")
+      alert("விற்பனை பதிவு வெற்றிகரமாக நீக்கப்பட்டது! சரக்கு இருப்பு மீண்டும் சேர்க்கப்பட்டது.")
     } catch (err) {
       console.error("Error deleting sale:", err)
-      alert("Error deleting sale: " + err.message)
+      alert("விற்பனை நீக்குவதில் பிழை ஏற்பட்டது: " + err.message)
     }
   }
 
