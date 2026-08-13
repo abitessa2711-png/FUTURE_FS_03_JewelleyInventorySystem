@@ -324,11 +324,6 @@ export default function App() {
     if (ledgerErr) throw ledgerErr
   }
 
-  const deleteProduct = async (id) => {
-    const { error } = await supabase.from('stock_entries').delete().eq('id', id)
-    if (error) console.error("Error deleting product:", error)
-  }
-
   const deleteSale = async (saleId) => {
     try {
       // 1. Fetch the sale details first
@@ -441,14 +436,17 @@ export default function App() {
     }
   }
 
-  const updateProduct = async (id, updates) => {
-    const dbUpdates = {}
-    if (updates.weight !== undefined) dbUpdates.weight = parseFloat(updates.weight)
-    if (updates.quantity !== undefined) dbUpdates.quantity = parseInt(updates.quantity)
-    if (updates.detail !== undefined) dbUpdates.detail = updates.detail
-
-    const { error } = await supabase.from('stock_entries').update(dbUpdates).eq('id', id)
-    if (error) console.error("Error updating product:", error)
+  const deleteProduct = async (id) => {
+    try {
+      const { error } = await supabase.from('stock_entries').delete().eq('id', id)
+      if (error) throw error
+      setProducts(prev => prev.filter(p => p.id !== id))
+      await loadData()
+      alert("சரக்கு இருப்பு வெற்றிகரமாக நீக்கப்பட்டது.")
+    } catch (err) {
+      console.error("Error deleting product:", err)
+      alert("இருப்பை நீக்குவதில் பிழை ஏற்பட்டது: " + err.message)
+    }
   }
 
   const addBuyback = async (buyback) => {
@@ -575,7 +573,7 @@ export default function App() {
     sell:      <SellDashboard  products={products}   processSale={processSale} />,
     sold:        <SoldItems      soldItems={soldItems} onDelete={deleteSale} role={user?.role} />,
     old_buyback: <OldBuyback     buybacks={buybacks}   onAddBuyback={addBuyback} onDeleteBuyback={deleteBuyback} />,
-    audit:       <AuditPage      products={products}   soldItems={soldItems} ledger={ledger} />,
+    audit:       <AuditPage      products={products}   soldItems={soldItems} ledger={ledger} onDeleteProduct={deleteProduct} onDeleteSale={deleteSale} role={user?.role} />,
     reports:     <Reports        products={products}   soldItems={soldItems} role={user?.role} deleteProduct={deleteProduct} />
   }
 

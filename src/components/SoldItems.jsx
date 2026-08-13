@@ -123,7 +123,7 @@ const SoldItems = ({ soldItems = [], onDelete, role = 'admin' }) => {
                         >
                           <Receipt size={14} />
                         </button>
-                        {role === 'admin' && (
+                        {(role === 'admin' || role === 'auditor') && (
                           <button
                             className="btn btn-danger-ghost"
                             style={{ padding: '6px', minWidth: 'auto', height: '30px' }}
@@ -139,7 +139,7 @@ const SoldItems = ({ soldItems = [], onDelete, role = 'admin' }) => {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={role === 'admin' ? 8 : 7} style={{ textAlign: 'center', padding: 48, color: 'var(--text-sub)' }}>
+                  <td colSpan={(role === 'admin' || role === 'auditor') ? 8 : 7} style={{ textAlign: 'center', padding: 48, color: 'var(--text-sub)' }}>
                     <Receipt size={40} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
                     <div>No sales found</div>
                   </td>

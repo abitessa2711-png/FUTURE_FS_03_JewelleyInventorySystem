@@ -7,7 +7,7 @@ const CATEGORIES = Object.keys(MASTER_DATA)
 
 const SellDashboard = ({ products = [], processSale }) => {
   const [formData, setFormData] = useState({
-    category: '', subcategory: '', variant: '', detail: '', weight: '', quantity: '', itemTotal: '', oldSilverAmt: ''
+    category: '', subcategory: '', variant: '', detail: '', weight: '', quantity: '', itemTotal: '', oldSilverAmt: '', discountAmt: ''
   })
   const [customer, setCustomer] = useState({ name: '', mobile: '' })
   const [cart, setCart] = useState([])
@@ -89,7 +89,7 @@ const SellDashboard = ({ products = [], processSale }) => {
 
   const handleReset = () => {
     setFormData({
-      category: '', subcategory: '', variant: '', detail: '', weight: '', quantity: '', itemTotal: '', oldSilverAmt: ''
+      category: '', subcategory: '', variant: '', detail: '', weight: '', quantity: '', itemTotal: '', oldSilverAmt: '', discountAmt: ''
     })
     setSelectedStockId('')
     setWeightSearch('')
@@ -100,6 +100,7 @@ const SellDashboard = ({ products = [], processSale }) => {
     const q = parseInt(formData.quantity || 0)
     const manualTotal = parseFloat(formData.itemTotal || 0)
     const oldSilAmt = parseFloat(formData.oldSilverAmt || 0)
+    const discAmt = parseFloat(formData.discountAmt || 0)
     
     if (!selectedStockId || !availableStock) {
       alert('இந்த பொருள் இருப்பில் இல்லை')
@@ -121,7 +122,7 @@ const SellDashboard = ({ products = [], processSale }) => {
       }
     }
 
-    const total = Math.max(0, manualTotal - oldSilAmt)
+    const total = Math.max(0, manualTotal - oldSilAmt - discAmt)
 
     setCart([...cart, { 
       ...formData, 
@@ -130,11 +131,12 @@ const SellDashboard = ({ products = [], processSale }) => {
       quantity: q,
       subtotal: manualTotal,
       oldSilverAmt: oldSilAmt,
+      discountAmount: discAmt,
       total: total 
     }])
     
     // Reset selection part
-    setFormData({ ...formData, weight: '', quantity: '', itemTotal: '', oldSilverAmt: '' })
+    setFormData({ ...formData, weight: '', quantity: '', itemTotal: '', oldSilverAmt: '', discountAmt: '' })
     setSelectedStockId('')
     setWeightSearch('')
   }
@@ -146,7 +148,7 @@ const SellDashboard = ({ products = [], processSale }) => {
       return {
         ...item,
         total: totalNum,
-        subtotal: totalNum + (parseFloat(item.oldSilverAmt) || 0)
+        subtotal: totalNum + (parseFloat(item.oldSilverAmt) || 0) + (parseFloat(item.discountAmount) || 0)
       }
     }))
   }
@@ -186,7 +188,8 @@ const SellDashboard = ({ products = [], processSale }) => {
   const itemOldSilverTotal = cart.reduce((sum, item) => sum + (parseFloat(item.oldSilverAmt) || 0), 0)
   const tradeInOldSilver = includeOldSilver ? parseFloat(oldSilverAmount || 0) : 0
   const totalOldSilverDeduction = itemOldSilverTotal + tradeInOldSilver
-  const netTotal = Math.max(0, grossTotal - totalOldSilverDeduction)
+  const totalDiscountDeduction = cart.reduce((sum, item) => sum + (parseFloat(item.discountAmount) || 0), 0)
+  const netTotal = Math.max(0, grossTotal - totalOldSilverDeduction - totalDiscountDeduction)
 
   return (
     <div className="animate-fade-in">
@@ -486,6 +489,17 @@ const SellDashboard = ({ products = [], processSale }) => {
                 style={{ borderColor: formData.oldSilverAmt ? 'var(--success)' : 'var(--border)', fontWeight: 600, color: formData.oldSilverAmt ? 'var(--success)' : 'var(--text-main)' }}
               />
             </div>
+            <div className="form-group grid-span-2">
+              <label>தள்ளுபடி தொகை (Discount Amount ₹ - Optional)</label>
+              <input 
+                type="number" 
+                step="0.01" 
+                placeholder="0.00" 
+                value={formData.discountAmt} 
+                onChange={e => setFormData({ ...formData, discountAmt: e.target.value })} 
+                style={{ borderColor: formData.discountAmt ? 'var(--danger)' : 'var(--border)', fontWeight: 600, color: formData.discountAmt ? 'var(--danger)' : 'var(--text-main)' }}
+              />
+            </div>
           </div>
 
           <button 
@@ -652,6 +666,11 @@ const SellDashboard = ({ products = [], processSale }) => {
               {totalOldSilverDeduction > 0 && (
                 <div className="flex-between fw-600" style={{ fontSize: '13px', color: 'var(--success)', marginTop: '4px' }}>
                   <span>பழைய வெள்ளி கழிவு {oldSilverWeight ? `(${oldSilverWeight}g)` : ''}:</span><span>- ₹{totalOldSilverDeduction.toFixed(2)}</span>
+                </div>
+              )}
+              {totalDiscountDeduction > 0 && (
+                <div className="flex-between fw-600" style={{ fontSize: '13px', color: 'var(--danger)', marginTop: '4px' }}>
+                  <span>தள்ளுபடி (Discount):</span><span>- ₹{totalDiscountDeduction.toFixed(2)}</span>
                 </div>
               )}
               <div style={{ borderTop: '2px solid var(--border)', margin: '10px 0' }} />

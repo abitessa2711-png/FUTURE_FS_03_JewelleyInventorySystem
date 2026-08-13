@@ -12,7 +12,8 @@ const BillModal = ({ bill, onClose }) => {
   const tradeInOldSilver = parseFloat(bill.metadata?.oldSilverAmount || 0)
   const oldSilverWeight = parseFloat(bill.metadata?.oldSilverWeight || 0)
   const totalOldSilver = itemOldSilver + tradeInOldSilver
-  const netTotal = Math.max(0, grossTotal - totalOldSilver)
+  const totalDiscount = items.reduce((s, i) => s + (parseFloat(i.discountAmount) || 0), 0)
+  const netTotal = Math.max(0, grossTotal - totalOldSilver - totalDiscount)
 
   return (
     <div className="modal-overlay no-print-overlay" style={{ background: 'rgba(0, 0, 0, 0.75)', zIndex: 9999 }}>
@@ -124,6 +125,12 @@ const BillModal = ({ bill, onClose }) => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#16a34a', marginBottom: '8px' }}>
                   <span>பழைய வெள்ளி கழிவு {oldSilverWeight > 0 ? `(${oldSilverWeight}g)` : ''}:</span>
                   <span style={{ fontWeight: 700 }}>- ₹{totalOldSilver.toFixed(2)}</span>
+                </div>
+              )}
+              {totalDiscount > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#dc2626', marginBottom: '8px' }}>
+                  <span>தள்ளுபடி (Discount):</span>
+                  <span style={{ fontWeight: 700 }}>- ₹{totalDiscount.toFixed(2)}</span>
                 </div>
               )}
               <div style={{ borderTop: '2px solid #cbd5e1', margin: '10px 0' }} />

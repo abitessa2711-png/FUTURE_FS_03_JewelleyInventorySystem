@@ -268,7 +268,7 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
                     மொத்த எடை<br />
                     <span style={{ fontSize: '10px', opacity: 0.7, fontWeight: 'normal', textTransform: 'none' }}>Total g</span>
                   </th>
-                  {role === 'admin' && (
+                  {(role === 'admin' || role === 'auditor') && (
                     <th style={{ width: '70px', textAlign: 'center' }}>
                       செயல்<br />
                       <span style={{ fontSize: '10px', opacity: 0.7, fontWeight: 'normal', textTransform: 'none' }}>Action</span>
@@ -326,7 +326,7 @@ const StockDashboard = ({ products = [], onDelete, role = 'admin' }) => {
                       <td className="hide-mobile" style={{ textAlign: 'right', fontWeight: 700 }}>
                         {itemTotalWeight.toFixed(3)}
                       </td>
-                      {role === 'admin' && (
+                      {(role === 'admin' || role === 'auditor') && (
                         <td style={{ textAlign: 'center' }}>
                           <button
                             className="btn btn-danger-ghost"
