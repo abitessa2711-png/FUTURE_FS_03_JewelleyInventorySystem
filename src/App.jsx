@@ -199,22 +199,45 @@ export default function App() {
     }
   }
 
-  // ── Realtime Postgres Subscriptions ───────────────────────────────────────
+  // ── Realtime Postgres Subscriptions & Multi-Device Sync ─────────────────
   useEffect(() => {
     if (!user) return
 
     loadData()
 
+    // 1. Supabase Realtime channel across all tables
     const channel = supabase
-      .channel('schema-db-changes')
+      .channel('schema-db-changes-' + Date.now())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'stock_entries' }, () => { loadData() })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ledger' }, () => { loadData() })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, () => { loadData() })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'purchases' }, () => { loadData() })
       .subscribe()
 
+    // 2. Window focus & Visibility change listeners (Crucial for mobile phones when waking up / switching tabs)
+    const handleSync = () => {
+      loadData()
+    }
+    window.addEventListener('focus', handleSync)
+    window.addEventListener('online', handleSync)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadData()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    // 3. Periodic 10-second background sync heartbeat
+    const syncInterval = setInterval(() => {
+      loadData()
+    }, 10000)
+
     return () => {
       supabase.removeChannel(channel)
+      window.removeEventListener('focus', handleSync)
+      window.removeEventListener('online', handleSync)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      clearInterval(syncInterval)
     }
   }, [user])
 
