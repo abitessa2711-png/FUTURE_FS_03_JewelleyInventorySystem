@@ -129,12 +129,18 @@ ALTER TABLE returns ENABLE ROW LEVEL SECURITY;
 -- Create policies (Allow full public access for testing and bypass account compatibility)
 CREATE POLICY "Allow select categories" ON categories FOR SELECT USING (true);
 CREATE POLICY "Allow insert categories" ON categories FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow update categories" ON categories FOR UPDATE USING (true);
+CREATE POLICY "Allow delete categories" ON categories FOR DELETE USING (true);
 
 CREATE POLICY "Allow select subcategories" ON subcategories FOR SELECT USING (true);
 CREATE POLICY "Allow insert subcategories" ON subcategories FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow update subcategories" ON subcategories FOR UPDATE USING (true);
+CREATE POLICY "Allow delete subcategories" ON subcategories FOR DELETE USING (true);
 
 CREATE POLICY "Allow select variants" ON variants FOR SELECT USING (true);
 CREATE POLICY "Allow insert variants" ON variants FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow update variants" ON variants FOR UPDATE USING (true);
+CREATE POLICY "Allow delete variants" ON variants FOR DELETE USING (true);
 
 CREATE POLICY "Allow select stock" ON stock_entries FOR SELECT USING (true);
 CREATE POLICY "Allow insert stock" ON stock_entries FOR INSERT WITH CHECK (true);
@@ -143,15 +149,28 @@ CREATE POLICY "Allow delete stock" ON stock_entries FOR DELETE USING (true);
 
 CREATE POLICY "Allow select sales_entries" ON sales_entries FOR SELECT USING (true);
 CREATE POLICY "Allow insert sales_entries" ON sales_entries FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow update sales_entries" ON sales_entries FOR UPDATE USING (true);
+CREATE POLICY "Allow delete sales_entries" ON sales_entries FOR DELETE USING (true);
 
 CREATE POLICY "Allow select ledger" ON ledger FOR SELECT USING (true);
 CREATE POLICY "Allow insert ledger" ON ledger FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow update ledger" ON ledger FOR UPDATE USING (true);
+CREATE POLICY "Allow delete ledger" ON ledger FOR DELETE USING (true);
 
 CREATE POLICY "Allow select sales" ON sales FOR SELECT USING (true);
 CREATE POLICY "Allow insert sales" ON sales FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow update sales" ON sales FOR UPDATE USING (true);
+CREATE POLICY "Allow delete sales" ON sales FOR DELETE USING (true);
+
+CREATE POLICY "Allow select purchases" ON purchases FOR SELECT USING (true);
+CREATE POLICY "Allow insert purchases" ON purchases FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow update purchases" ON purchases FOR UPDATE USING (true);
+CREATE POLICY "Allow delete purchases" ON purchases FOR DELETE USING (true);
 
 CREATE POLICY "Allow select returns" ON returns FOR SELECT USING (true);
 CREATE POLICY "Allow insert returns" ON returns FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow update returns" ON returns FOR UPDATE USING (true);
+CREATE POLICY "Allow delete returns" ON returns FOR DELETE USING (true);
 
 -- Enable Realtime for crucial tables
 ALTER PUBLICATION supabase_realtime ADD TABLE stock_entries;
