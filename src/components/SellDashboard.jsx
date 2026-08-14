@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { MASTER_DATA } from '../data/masterData'
-import { ShoppingCart, User, Trash2, Eye, Plus, Check } from 'lucide-react'
+import { ShoppingCart, User, Trash2, Eye } from 'lucide-react'
 import BillModal from './BillModal'
 
-const CATEGORIES = Object.keys(MASTER_DATA)
+const CATEGORIES = Object.keys(MASTER_DATA || {})
 
 const SellDashboard = ({ products = [], processSale }) => {
   const [formData, setFormData] = useState({
@@ -17,7 +17,11 @@ const SellDashboard = ({ products = [], processSale }) => {
   const [selectedStockId, setSelectedStockId] = useState('')
   const [weightSearch, setWeightSearch] = useState('')
   const [saleDate, setSaleDate] = useState(() => {
-    return new Date().toLocaleString('sv-SE').slice(0, 16).replace(' ', 'T')
+    try {
+      return new Date().toLocaleString('sv-SE').slice(0, 16).replace(' ', 'T')
+    } catch (e) {
+      return new Date().toISOString().slice(0, 16)
+    }
   })
   
   // Daily Metal Rates
@@ -33,18 +37,19 @@ const SellDashboard = ({ products = [], processSale }) => {
 
   const getSubs = () => {
     if (!formData.category || !MASTER_DATA[formData.category]) return []
-    return Object.keys(MASTER_DATA[formData.category])
+    return Object.keys(MASTER_DATA[formData.category] || {})
   }
+
   const getVariants = () => {
     if (!formData.category || !formData.subcategory || !MASTER_DATA[formData.category]) return []
-    const d = MASTER_DATA[formData.category][formData.subcategory]
+    const d = MASTER_DATA[formData.category]?.[formData.subcategory]
     if (!d) return []
     return Array.isArray(d) ? d : (typeof d === 'object' ? Object.keys(d) : [])
   }
 
   // Helper for category emoji
   const getCategoryEmoji = (cat) => {
-    const c = (cat || '').toLowerCase()
+    const c = String(cat || '').toLowerCase()
     if (c.includes('gold') || c.includes('தங்கம்')) return '🟡'
     if (c.includes('silver') || c.includes('வெள்ளி') || c.includes('கொலுசு') || c.includes('மெட்டி') || c.includes('தண்டை') || c.includes('வளையல்') || c.includes('திருகு') || c.includes('கொடி') || c.includes('டாலர்') || c.includes('தாயத்து') || c.includes('கம்மல்') || c.includes('மோதிரம்') || c.includes('காயின்') || c.includes('காப்பு') || c.includes('செயின்') || c.includes('பாத்திரங்கள்')) return '⚪'
     return '📦'
@@ -52,21 +57,24 @@ const SellDashboard = ({ products = [], processSale }) => {
 
   // Calculate default price for an item based on metal rates
   const calculateItemEstTotal = (cat, wt) => {
-    const c = (cat || '').toLowerCase()
+    const c = String(cat || '').toLowerCase()
     const w = parseFloat(wt || 0)
-    if (w <= 0) return 0
+    if (isNaN(w) || w <= 0) return 0
     if (c.includes('gold') || c.includes('தங்கம்')) {
       const gr = parseFloat(goldRate || 0)
-      return gr > 0 ? (w * gr) : 0
+      return (!isNaN(gr) && gr > 0) ? (w * gr) : 0
     } else {
       const sr = parseFloat(silverRate || 0)
-      return sr > 0 ? (w * sr) : 0
+      return (!isNaN(sr) && sr > 0) ? (w * sr) : 0
     }
   }
 
-  // Filter products for dropdown/search
-  const filteredStocks = products.filter(s => {
-    const hasStock = (s.weight && s.weight > 0) || (s.quantity && s.quantity > 0)
+  // Filter products safely for search and dropdown
+  const filteredStocks = (products || []).filter(s => {
+    if (!s) return false
+    const numWeight = parseFloat(s.weight || 0)
+    const numQty = parseInt(s.quantity || 0, 10)
+    const hasStock = numWeight > 0 || numQty > 0
     if (!hasStock) return false
 
     if (!weightSearch) {
@@ -76,18 +84,19 @@ const SellDashboard = ({ products = [], processSale }) => {
       return true
     }
 
-    const searchVal = weightSearch.trim().toLowerCase();
-    const sWeight = s.weight || 0;
-    const sDetail = s.detail || '';
-    const sId = s.id || '';
+    const searchVal = String(weightSearch || '').trim().toLowerCase()
+    const sDetail = String(s.detail || '').toLowerCase()
+    const sId = String(s.id || '')
+    const sWeightStr = !isNaN(numWeight) ? numWeight.toString() : ''
+    const sWeightFixed = !isNaN(numWeight) ? numWeight.toFixed(3) : ''
     
-    return sWeight.toString().includes(searchVal) || 
-           sWeight.toFixed(3).includes(searchVal) || 
-           sDetail.toLowerCase().includes(searchVal) ||
-           sId.toString() === searchVal;
-  });
+    return sWeightStr.includes(searchVal) || 
+           sWeightFixed.includes(searchVal) || 
+           sDetail.includes(searchVal) ||
+           sId === searchVal
+  })
 
-  const availableStock = products.find(p => p.id === parseInt(selectedStockId))
+  const availableStock = (products || []).find(p => p && p.id === parseInt(selectedStockId, 10))
 
   const handleReset = () => {
     setFormData({
@@ -99,7 +108,7 @@ const SellDashboard = ({ products = [], processSale }) => {
 
   const addToCart = () => {
     const w = parseFloat(formData.weight || 0)
-    const q = parseInt(formData.quantity || 1)
+    const q = parseInt(formData.quantity || 1, 10)
     
     if (!selectedStockId || !availableStock) {
       alert('பொருளை தேர்வு செய்யவும் (Please select an item from stock)')
@@ -111,11 +120,13 @@ const SellDashboard = ({ products = [], processSale }) => {
     }
 
     if (availableStock) {
-      if (w > 0 && availableStock.weight < w) {
+      const avWt = parseFloat(availableStock.weight || 0)
+      const avQty = parseInt(availableStock.quantity || 0, 10)
+      if (w > 0 && avWt < w) {
         alert('போதுமான இருப்பு எடை இல்லை')
         return
       }
-      if (q > 0 && availableStock.quantity < q) {
+      if (q > 0 && avQty < q) {
         alert('போதுமான இருப்பு எண்ணிக்கை இல்லை')
         return
       }
@@ -139,14 +150,14 @@ const SellDashboard = ({ products = [], processSale }) => {
   }
 
   // Calculated Totals for entire bill
-  const totalCartQty = cart.reduce((sum, item) => sum + (parseInt(item.quantity || 0) || 0), 0)
+  const totalCartQty = cart.reduce((sum, item) => sum + (parseInt(item.quantity || 0, 10) || 0), 0)
   const totalCartWeight = cart.reduce((sum, item) => sum + (parseFloat(item.weight || 0) || 0), 0)
   const autoSuggestedGross = cart.reduce((sum, item) => sum + (parseFloat(item.estTotal || 0) || 0), 0)
 
   // Gross Total: if user typed manual bill total use that, otherwise use autoSuggestedGross
-  const effectiveGrossTotal = manualBillTotal !== '' ? parseFloat(manualBillTotal || 0) : autoSuggestedGross
-  const oldSilverDeduction = includeOldSilver ? parseFloat(oldSilverAmount || 0) : 0
-  const discountDeduction = parseFloat(billDiscount || 0)
+  const effectiveGrossTotal = manualBillTotal !== '' ? (parseFloat(manualBillTotal) || 0) : autoSuggestedGross
+  const oldSilverDeduction = includeOldSilver ? (parseFloat(oldSilverAmount) || 0) : 0
+  const discountDeduction = parseFloat(billDiscount) || 0
   const netPayable = Math.max(0, effectiveGrossTotal - oldSilverDeduction - discountDeduction)
 
   const handleSale = async (printAfterSave = true) => {
@@ -160,21 +171,21 @@ const SellDashboard = ({ products = [], processSale }) => {
       const metadata = {
         overallBillTotal: effectiveGrossTotal,
         billDiscount: discountDeduction,
-        oldSilverWeight: includeOldSilver ? parseFloat(oldSilverWeight || 0) : 0,
+        oldSilverWeight: includeOldSilver ? (parseFloat(oldSilverWeight) || 0) : 0,
         oldSilverAmount: oldSilverDeduction,
         goldRate: parseFloat(goldRate || 0),
         silverRate: parseFloat(silverRate || 0)
       }
 
       // Distribute bill amount across cart items if needed
-      const processedCart = cart.map((item, idx) => {
+      const processedCart = cart.map((item) => {
         let itemPortion = item.estTotal || 0
         if (effectiveGrossTotal > 0 && totalCartWeight > 0) {
           itemPortion = (parseFloat(item.weight || 0) / totalCartWeight) * effectiveGrossTotal
         }
         return {
           ...item,
-          total: itemPortion > 0 ? itemPortion : item.estTotal
+          total: itemPortion > 0 ? itemPortion : (item.estTotal || 0)
         }
       })
 
@@ -194,7 +205,11 @@ const SellDashboard = ({ products = [], processSale }) => {
       setOldSilverWeight('')
       setOldSilverAmount('')
       setBillDiscount('')
-      setSaleDate(new Date().toLocaleString('sv-SE').slice(0, 16).replace(' ', 'T'))
+      try {
+        setSaleDate(new Date().toLocaleString('sv-SE').slice(0, 16).replace(' ', 'T'))
+      } catch (e) {
+        setSaleDate(new Date().toISOString().slice(0, 16))
+      }
     } catch (err) {
       alert('விற்பனை பிழை: ' + err.message)
     } finally {
@@ -281,28 +296,31 @@ const SellDashboard = ({ products = [], processSale }) => {
                 placeholder="எடை (எ.கா: 1.990) அல்லது ID தட்டச்சு செய்யவும்..." 
                 value={weightSearch} 
                 onChange={e => {
-                  const val = e.target.value;
-                  setWeightSearch(val);
-                  const matches = products.filter(s => {
-                    const hasStock = (s.weight && s.weight > 0) || (s.quantity && s.quantity > 0);
-                    if (!hasStock) return false;
-                    const sWeight = s.weight || 0;
-                    const sDetail = s.detail || '';
-                    const sId = s.id || '';
-                    return sWeight.toString().includes(val) || 
-                           sWeight.toFixed(3).includes(val) ||
-                           sDetail.toLowerCase().includes(val.toLowerCase()) ||
-                           sId.toString() === val;
+                  const val = String(e.target.value || '').trim().toLowerCase();
+                  setWeightSearch(e.target.value);
+                  const matches = (products || []).filter(s => {
+                    if (!s) return false;
+                    const sWt = parseFloat(s.weight || 0);
+                    const sQty = parseInt(s.quantity || 0, 10);
+                    if (sWt <= 0 && sQty <= 0) return false;
+                    const sDetail = String(s.detail || '').toLowerCase();
+                    const sId = String(s.id || '');
+                    const sWtStr = !isNaN(sWt) ? sWt.toString() : '';
+                    const sWtFixed = !isNaN(sWt) ? sWt.toFixed(3) : '';
+                    return sWtStr.includes(val) || 
+                           sWtFixed.includes(val) ||
+                           sDetail.includes(val) ||
+                           sId === val;
                   });
                   if (matches.length === 1) {
                     const s = matches[0];
                     setSelectedStockId(s.id.toString());
                     setFormData({ 
                       ...formData, 
-                      category: s.category,
-                      subcategory: s.subcategory,
-                      variant: s.variant,
-                      detail: s.detail, 
+                      category: s.category || '',
+                      subcategory: s.subcategory || '',
+                      variant: s.variant || '',
+                      detail: s.detail || '', 
                       weight: (s.weight || 0).toString(), 
                       quantity: "1"
                     });
@@ -316,14 +334,14 @@ const SellDashboard = ({ products = [], processSale }) => {
               <select value={selectedStockId} onChange={e => {
                 const id = e.target.value;
                 setSelectedStockId(id);
-                const s = products.find(p => p.id === parseInt(id));
+                const s = (products || []).find(p => p && p.id === parseInt(id, 10));
                 if (s) {
                   setFormData({ 
                     ...formData, 
-                    category: s.category,
-                    subcategory: s.subcategory,
-                    variant: s.variant,
-                    detail: s.detail, 
+                    category: s.category || '',
+                    subcategory: s.subcategory || '',
+                    variant: s.variant || '',
+                    detail: s.detail || '', 
                     weight: (s.weight || 0).toString(), 
                     quantity: "1"
                   });
@@ -332,7 +350,7 @@ const SellDashboard = ({ products = [], processSale }) => {
                 <option value="">— {filteredStocks.length > 0 ? 'Select Stock Entry' : 'No Stock Available'} —</option>
                 {filteredStocks.slice(0, 100).map(s => (
                   <option key={s.id} value={s.id}>
-                    ID: {s.id} | {getCategoryEmoji(s.category)} {s.category} {' > '} {s.subcategory} {' > '} {s.variant} | {s.detail || 'No Detail'} | {s.quantity} pcs | {s.weight}g
+                    ID: {s.id} | {getCategoryEmoji(s.category)} {s.category} {' > '} {s.subcategory} {' > '} {s.variant} | {s.detail || 'No Detail'} | {s.quantity} pcs | {parseFloat(s.weight || 0).toFixed(3)}g
                   </option>
                 ))}
               </select>
@@ -355,19 +373,19 @@ const SellDashboard = ({ products = [], processSale }) => {
                   borderRadius: '10px' 
                 }}>
                   {filteredStocks.slice(0, 50).map(s => {
-                    const isSelected = selectedStockId === s.id.toString();
+                    const isSelected = selectedStockId === String(s.id);
                     return (
                       <button
                         key={s.id}
                         type="button"
                         onClick={() => {
-                          setSelectedStockId(s.id.toString());
+                          setSelectedStockId(String(s.id));
                           setFormData({ 
                             ...formData, 
-                            category: s.category,
-                            subcategory: s.subcategory,
-                            variant: s.variant,
-                            detail: s.detail, 
+                            category: s.category || '',
+                            subcategory: s.subcategory || '',
+                            variant: s.variant || '',
+                            detail: s.detail || '', 
                             weight: (s.weight || 0).toString(), 
                             quantity: "1"
                           });
@@ -387,7 +405,7 @@ const SellDashboard = ({ products = [], processSale }) => {
                         }}
                       >
                         <span style={{ color: isSelected ? 'var(--gold)' : 'var(--text-sub)', fontSize: '10px' }}>#{s.id}</span>
-                        <span>{getCategoryEmoji(s.category)} {s.variant || s.subcategory || s.category}: {s.weight}g</span>
+                        <span>{getCategoryEmoji(s.category)} {s.variant || s.subcategory || s.category}: {parseFloat(s.weight || 0).toFixed(3)}g</span>
                         {s.quantity > 1 && <span style={{ opacity: 0.8 }}>({s.quantity} pcs)</span>}
                       </button>
                     );
@@ -400,14 +418,18 @@ const SellDashboard = ({ products = [], processSale }) => {
               <div className="grid-span-2" style={{ marginTop: '-4px', marginBottom: '6px', fontSize: '13px', background: 'rgba(255,255,255,0.03)', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                 <span style={{ color: 'var(--text-sub)' }}>
                   இருப்பில் உள்ளது: {' '}
-                  <strong style={{ color: 'var(--gold)' }}>{availableStock.weight}g</strong> | <strong style={{ color: 'var(--gold)' }}>{availableStock.quantity} pcs</strong>
+                  <strong style={{ color: 'var(--gold)' }}>{parseFloat(availableStock.weight || 0).toFixed(3)}g</strong> | <strong style={{ color: 'var(--gold)' }}>{availableStock.quantity || 0} pcs</strong>
                 </span>
                 <button 
                   type="button" 
                   className="btn btn-ghost" 
                   style={{ height: '24px', fontSize: '11px', padding: '0 8px', borderRadius: '4px' }}
                   onClick={() => {
-                    setFormData(prev => ({ ...prev, weight: availableStock.weight.toString(), quantity: availableStock.quantity.toString() }));
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      weight: (availableStock.weight || 0).toString(), 
+                      quantity: (availableStock.quantity || 1).toString() 
+                    }));
                   }}
                 >
                   முழு இருப்பு போடு
@@ -439,6 +461,7 @@ const SellDashboard = ({ products = [], processSale }) => {
           </div>
 
           <button 
+            type="button"
             className="btn btn-gold btn-lg btn-full" 
             onClick={addToCart}
             disabled={!selectedStockId}
@@ -535,10 +558,10 @@ const SellDashboard = ({ products = [], processSale }) => {
                           {item.category} {item.detail && ` · ${item.detail}`}
                         </div>
                       </td>
-                      <td style={{ textAlign: 'center', fontWeight: 600 }}>{item.quantity} pcs</td>
+                      <td style={{ textAlign: 'center', fontWeight: 600 }}>{item.quantity || 1} pcs</td>
                       <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--gold)' }}>{parseFloat(item.weight || 0).toFixed(3)}g</td>
                       <td style={{ textAlign: 'right' }}>
-                        <button className="btn btn-danger-ghost" style={{ padding: 4 }} onClick={() => setCart(cart.filter((_, i) => i !== idx))}><Trash2 size={14} /></button>
+                        <button type="button" className="btn btn-danger-ghost" style={{ padding: 4 }} onClick={() => setCart(cart.filter((_, i) => i !== idx))}><Trash2 size={14} /></button>
                       </td>
                     </tr>
                   ))}
@@ -622,29 +645,29 @@ const SellDashboard = ({ products = [], processSale }) => {
             <div style={{ padding: '14px 16px', background: 'rgba(212,175,55,0.05)', borderRadius: '10px', border: '1px solid var(--border)', marginBottom: '14px' }}>
               <div className="flex-between fw-600" style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
                 <span>மொத்த உருப்படிகள் (Total Items):</span>
-                <span>{totalCartQty} pcs | {totalCartWeight.toFixed(3)}g</span>
+                <span>{totalCartQty} pcs | {Number(totalCartWeight).toFixed(3)}g</span>
               </div>
               <div style={{ borderTop: '1px solid var(--border)', margin: '8px 0' }} />
               <div className="flex-between fw-600" style={{ fontSize: '14px', color: 'var(--text-main)' }}>
                 <span>மொத்த மதிப்பு (Gross Total):</span>
-                <span>₹{effectiveGrossTotal.toFixed(2)}</span>
+                <span>₹{Number(effectiveGrossTotal).toFixed(2)}</span>
               </div>
               {oldSilverDeduction > 0 && (
                 <div className="flex-between fw-600" style={{ fontSize: '13px', color: 'var(--success)', marginTop: '3px' }}>
                   <span>பழைய பொருள் கழிவு {oldSilverWeight ? `(${oldSilverWeight}g)` : ''}:</span>
-                  <span>- ₹{oldSilverDeduction.toFixed(2)}</span>
+                  <span>- ₹{Number(oldSilverDeduction).toFixed(2)}</span>
                 </div>
               )}
               {discountDeduction > 0 && (
                 <div className="flex-between fw-600" style={{ fontSize: '13px', color: 'var(--danger)', marginTop: '3px' }}>
                   <span>தள்ளுபடி (Discount):</span>
-                  <span>- ₹{discountDeduction.toFixed(2)}</span>
+                  <span>- ₹{Number(discountDeduction).toFixed(2)}</span>
                 </div>
               )}
               <div style={{ borderTop: '2px solid var(--border)', margin: '8px 0' }} />
               <div className="flex-between fw-700" style={{ fontSize: '18px', color: 'var(--gold)' }}>
                 <span>நிகர தொகை (Net Pay):</span>
-                <span>₹{netPayable.toFixed(2)}</span>
+                <span>₹{Number(netPayable).toFixed(2)}</span>
               </div>
             </div>
             
