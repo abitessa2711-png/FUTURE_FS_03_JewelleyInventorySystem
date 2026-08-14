@@ -229,6 +229,16 @@ const SoldItems = ({ soldItems = [], onDelete, onUpdateDate, role = 'admin' }) =
                           >
                             <Receipt size={14} />
                           </button>
+
+                          {/* Quick WhatsApp Share Button */}
+                          <button
+                            className="btn btn-secondary-ghost"
+                            style={{ padding: '5px', minWidth: 'auto', height: '30px', color: '#25D366' }}
+                            onClick={() => handleViewBill(b)}
+                            title="WhatsApp-ல் பில் அனுப்பு (Send via WhatsApp)"
+                          >
+                            <MessageCircle size={14} />
+                          </button>
                           
                           {/* Edit Date Button */}
                           <button

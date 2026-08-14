@@ -1,11 +1,13 @@
-import React from 'react'
+import React, { useState } from 'react'
 import logoImg from './logo.jpg'
-import { Printer, X } from 'lucide-react'
+import { Printer, X, MessageCircle, Send } from 'lucide-react'
 
 const BillModal = ({ bill, onClose }) => {
   if (!bill) return null
   const items = bill.items || []
   const meta = bill.metadata || {}
+  const [showPhonePrompt, setShowPhonePrompt] = useState(false)
+  const [customPhone, setCustomPhone] = useState(() => (bill.mobile || '').replace(/[^0-9]/g, ''))
   
   // Calculate Totals
   const itemsSum = items.reduce((s, i) => s + (parseFloat(i.total) || 0), 0)
@@ -14,6 +16,65 @@ const BillModal = ({ bill, onClose }) => {
   const oldSilverWeight = parseFloat(meta.oldSilverWeight || 0)
   const discountAmount = parseFloat(meta.billDiscount || 0)
   const netTotal = Math.max(0, grossTotal - oldSilverAmount - discountAmount)
+
+  const sendWhatsApp = (targetPhone) => {
+    let cleanPhone = (targetPhone || '').replace(/[^0-9]/g, '')
+    if (cleanPhone.length === 10) {
+      cleanPhone = '91' + cleanPhone
+    }
+
+    const itemsText = items.map((it, idx) => {
+      const name = it.variant || it.subcategory || it.category
+      const detail = it.detail ? ` (${it.detail})` : ''
+      return `${idx + 1}. *${name}*${detail}\n   ▫️ எடை: ${parseFloat(it.weight || 0).toFixed(3)}g | அளவு: ${it.quantity || 1} pcs`
+    }).join('\n\n')
+
+    let summaryText = `💰 *மொத்த மதிப்பு (Gross Total):* ₹${grossTotal.toFixed(2)}`
+    if (oldSilverAmount > 0) {
+      summaryText += `\n✨ *பழைய பொருள் கழிவு:* - ₹${oldSilverAmount.toFixed(2)}${oldSilverWeight > 0 ? ` (${oldSilverWeight}g)` : ''}`
+    }
+    if (discountAmount > 0) {
+      summaryText += `\n🏷️ *தள்ளுபடி (Discount):* - ₹${discountAmount.toFixed(2)}`
+    }
+    summaryText += `\n💎 *நிகரத் தொகை (Net Pay):* *₹${netTotal.toFixed(2)}*`
+
+    const formattedDate = bill.date ? new Date(bill.date).toLocaleString('en-IN') : new Date().toLocaleString('en-IN')
+
+    const message = 
+`✨ *TAS JEWELLERS - விற்பனை ரசீது* ✨
+85, திருத்தங்கல் ரோடு, சிவகாசி - 626123
+📞 Ph: 9597258369, 7867807337
+━━━━━━━━━━━━━━━━━━━━
+🧾 *பில் எண் (Invoice No):* ${bill.id || 'N/A'}
+📅 *தேதி (Date):* ${formattedDate}
+👤 *வாடிக்கையாளர்:* ${bill.customerName || 'Walk-in'}
+${bill.mobile ? `📱 *மொபைல்:* ${bill.mobile}` : ''}
+━━━━━━━━━━━━━━━━━━━━
+📦 *பொருட்கள் விவரம் (Items):*
+${itemsText}
+━━━━━━━━━━━━━━━━━━━━
+${summaryText}
+━━━━━━━━━━━━━━━━━━━━
+🙏 *நன்றி! மீண்டும் வருக!*
+_TAS JEWELLERS, Sivakasi_`
+
+    const encodedMsg = encodeURIComponent(message)
+    const url = cleanPhone 
+      ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodedMsg}`
+      : `https://api.whatsapp.com/send?text=${encodedMsg}`
+
+    window.open(url, '_blank')
+    setShowPhonePrompt(false)
+  }
+
+  const handleWhatsAppClick = () => {
+    const rawMobile = (bill.mobile || '').replace(/[^0-9]/g, '')
+    if (rawMobile.length >= 10) {
+      sendWhatsApp(rawMobile)
+    } else {
+      setShowPhonePrompt(true)
+    }
+  }
 
   return (
     <div 
@@ -161,17 +222,107 @@ const BillModal = ({ bill, onClose }) => {
         </div>
 
         {/* Action Buttons - Hidden during printing */}
-        <div className="flex no-print" style={{ justifyContent: 'center', gap: '12px', padding: '14px', background: '#f1f5f9', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn btn-ghost" onClick={onClose} style={{ width: '110px', color: '#475569', borderColor: '#cbd5e1' }}>மூடு (Close)</button>
+        <div className="flex no-print" style={{ justifyContent: 'center', flexWrap: 'wrap', gap: '10px', padding: '14px', background: '#f1f5f9', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn btn-ghost" onClick={onClose} style={{ minWidth: '90px', color: '#475569', borderColor: '#cbd5e1' }}>
+            மூடு (Close)
+          </button>
+
+          {/* WhatsApp Bill Share Button */}
           <button 
+            type="button"
+            className="btn" 
+            onClick={handleWhatsAppClick} 
+            style={{ 
+              background: '#25D366', 
+              color: '#ffffff', 
+              fontWeight: 700, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: '6px',
+              padding: '10px 18px',
+              border: 'none',
+              borderRadius: '8px'
+            }}
+          >
+            <MessageCircle size={16} /> WhatsApp பில் அனுப்பு
+          </button>
+
+          {/* Print Button */}
+          <button 
+            type="button"
             className="btn btn-gold" 
             onClick={() => window.print()} 
-            style={{ width: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: '#b45309', color: '#ffffff', fontWeight: 700 }}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: '8px', 
+              background: '#b45309', 
+              color: '#ffffff', 
+              fontWeight: 700,
+              padding: '10px 20px',
+              borderRadius: '8px'
+            }}
           >
             <Printer size={16} /> பில் பிரிண்ட் செய் (Print)
           </button>
         </div>
       </div>
+
+      {/* Phone Number Input Prompt if not present */}
+      {showPhonePrompt && (
+        <div 
+          className="modal-overlay" 
+          onClick={() => setShowPhonePrompt(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+        >
+          <div 
+            className="modal-content animate-fade-in" 
+            onClick={e => e.stopPropagation()}
+            style={{ width: '380px', maxWidth: '100%', background: '#ffffff', color: '#0f172a', borderRadius: '12px', padding: '20px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}
+          >
+            <div className="flex-between mb-12">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MessageCircle size={20} color="#25D366" />
+                <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>WhatsApp பில் அனுப்புதல்</h3>
+              </div>
+              <button className="btn btn-ghost" style={{ padding: '4px', height: 'auto', color: '#64748b' }} onClick={() => setShowPhonePrompt(false)}>
+                <X size={16} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '13px', color: '#475569', marginBottom: '12px' }}>
+              வாடிக்கையாளரின் 10 இலக்க WhatsApp மொபைல் எண்ணை உள்ளிடவும்:
+            </p>
+
+            <div className="form-group mb-16">
+              <input 
+                type="tel" 
+                placeholder="எ.கா: 9876543210" 
+                value={customPhone} 
+                onChange={e => setCustomPhone(e.target.value)}
+                style={{ height: '42px', fontSize: '16px', fontWeight: 700, borderColor: '#25D366', color: '#0f172a', background: '#f8fafc' }}
+                autoFocus
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button className="btn btn-secondary" onClick={() => setShowPhonePrompt(false)}>
+                ரத்து (Cancel)
+              </button>
+              <button 
+                className="btn" 
+                onClick={() => sendWhatsApp(customPhone)}
+                disabled={!customPhone}
+                style={{ background: '#25D366', color: '#ffffff', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Send size={14} /> அனுப்பு (Send)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
