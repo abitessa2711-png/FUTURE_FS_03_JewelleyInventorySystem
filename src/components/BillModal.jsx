@@ -2,6 +2,53 @@ import React, { useState, useRef } from 'react'
 import logoImg from './logo.jpg'
 import { Printer, X, MessageCircle, Send, Download, Image as ImageIcon } from 'lucide-react'
 
+// Helper to format full invoice message text for WhatsApp
+export const generateWhatsAppBillText = (bill) => {
+  const items = bill.items || []
+  const meta = bill.metadata || {}
+  const itemsSum = items.reduce((s, i) => s + (parseFloat(i.total) || 0), 0)
+  const grossTotal = parseFloat(meta.overallBillTotal || 0) > 0 ? parseFloat(meta.overallBillTotal) : itemsSum
+  const oldSilverAmount = parseFloat(meta.oldSilverAmount || 0)
+  const oldSilverWeight = parseFloat(meta.oldSilverWeight || 0)
+  const discountAmount = parseFloat(meta.billDiscount || 0)
+  const netTotal = Math.max(0, grossTotal - oldSilverAmount - discountAmount)
+
+  const itemsList = items.map((it, idx) => {
+    const name = it.variant || it.subcategory || it.category
+    const det = it.detail ? ` (${it.detail})` : ''
+    return `${idx + 1}. *${name}*${det}\n   ▫️ எடை: ${parseFloat(it.weight || 0).toFixed(3)}g | அளவு: ${it.quantity || 1} pcs`
+  }).join('\n\n')
+
+  let summary = `💰 *மொத்த மதிப்பு (Gross Total):* ₹${grossTotal.toFixed(2)}`
+  if (oldSilverAmount > 0) {
+    summary += `\n✨ *பழைய பொருள் கழிவு:* - ₹${oldSilverAmount.toFixed(2)}${oldSilverWeight > 0 ? ` (${oldSilverWeight}g)` : ''}`
+  }
+  if (discountAmount > 0) {
+    summary += `\n🏷️ *தள்ளுபடி (Discount):* - ₹${discountAmount.toFixed(2)}`
+  }
+  summary += `\n💎 *நிகரத் தொகை (Net Pay):* *₹${netTotal.toFixed(2)}*`
+
+  const dateStr = bill.date ? new Date(bill.date).toLocaleString('en-IN') : new Date().toLocaleString('en-IN')
+
+  return `✨ *TAS JEWELLERS - விற்பனை ரசீது* ✨
+85, திருத்தங்கல் ரோடு, சிவகாசி - 626123
+(தேவர் சிலை எதிரில்)
+📞 Ph: 9597258369, 7867807337
+━━━━━━━━━━━━━━━━━━━━
+🧾 *பில் எண் (Invoice No):* ${bill.id || bill.rawBillId || 'N/A'}
+📅 *தேதி (Date):* ${dateStr}
+👤 *வாடிக்கையாளர்:* ${bill.customerName || 'Walk-in'}
+${bill.mobile ? `📱 *மொபைல்:* ${bill.mobile}` : ''}
+━━━━━━━━━━━━━━━━━━━━
+📦 *பொருட்கள் விவரம் (Items):*
+${itemsList}
+━━━━━━━━━━━━━━━━━━━━
+${summary}
+━━━━━━━━━━━━━━━━━━━━
+🙏 *நன்றி! மீண்டும் வருக!*
+_TAS JEWELLERS, Sivakasi_`
+}
+
 const BillModal = ({ bill, onClose }) => {
   if (!bill) return null
   const items = bill.items || []
@@ -66,7 +113,6 @@ const BillModal = ({ bill, onClose }) => {
           ctx.lineWidth = 2
           ctx.stroke()
         } catch (e) {
-          // Fallback if logo fails
           ctx.fillStyle = '#b45309'
           ctx.fillRect(37, 37, 76, 76)
         }
@@ -279,70 +325,40 @@ const BillModal = ({ bill, onClose }) => {
     })
   }
 
-  // Handle WhatsApp Image Sharing
-  const handleShareWhatsAppImage = async (phone) => {
+  // Direct WhatsApp Redirection to customer number
+  const handleDirectWhatsApp = async (phone) => {
+    let cleanPhone = (phone || bill.mobile || '').replace(/[^0-9]/g, '')
+    if (cleanPhone.length === 10) {
+      cleanPhone = '91' + cleanPhone
+    }
+
+    const billMsg = generateWhatsAppBillText(bill)
+    const encoded = encodeURIComponent(billMsg)
+    const waUrl = cleanPhone 
+      ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encoded}`
+      : `https://api.whatsapp.com/send?text=${encoded}`
+
+    // Copy Image to clipboard in background for fast Ctrl+V pasting
     try {
-      setIsGeneratingImg(true)
-      const blob = await generateBillCanvasBlob()
-      if (!blob) throw new Error('Could not generate bill image')
-
-      const cleanPhone = (phone || bill.mobile || '').replace(/[^0-9]/g, '')
-      const fileName = `TAS_Bill_${bill.id || 'Invoice'}.png`
-      const file = new File([blob], fileName, { type: 'image/png' })
-
-      // 1. Check if Mobile Native Web Share API is available (Shares the actual image directly to WhatsApp!)
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: `TAS Jewellers Bill - ${bill.id}`,
-          text: `TAS JEWELLERS - விற்பனை ரசீது (Bill #${bill.id || ''})`
-        })
-        setShowPhonePrompt(false)
-        return
-      }
-
-      // 2. For Desktop/Laptop: Copy to Clipboard & Download Image & Open WhatsApp Web
-      let copied = false
-      try {
-        if (navigator.clipboard && navigator.clipboard.write) {
+      generateBillCanvasBlob().then(blob => {
+        if (blob && navigator.clipboard && navigator.clipboard.write) {
           const item = new ClipboardItem({ 'image/png': blob })
-          await navigator.clipboard.write([item])
-          copied = true
+          navigator.clipboard.write([item]).catch(() => {})
         }
-      } catch (clipErr) {
-        console.warn('Clipboard write error:', clipErr)
-      }
+      }).catch(() => {})
+    } catch (e) {}
 
-      // Trigger automatic image download
-      const imgUrl = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = imgUrl
-      a.download = fileName
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
+    // Open WhatsApp directly for the customer
+    window.open(waUrl, '_blank')
+    setShowPhonePrompt(false)
+  }
 
-      let targetNumber = cleanPhone
-      if (targetNumber.length === 10) targetNumber = '91' + targetNumber
-
-      const waText = encodeURIComponent(`வணக்கம்! TAS Jewellers பில் ரசீது (Bill #${bill.id || ''}) இத்துடன் இணைக்கப்பட்டுள்ளது.\n\nநிகர தொகை: ₹${netTotal.toFixed(2)}`)
-      const waUrl = targetNumber 
-        ? `https://api.whatsapp.com/send?phone=${targetNumber}&text=${waText}`
-        : `https://api.whatsapp.com/send?text=${waText}`
-
-      if (copied) {
-        alert('பில் படம் (Bill Image) காப்பி செய்யப்பட்டது & Download செய்யப்பட்டது!\n\nWhatsApp Web திறந்ததும் Chat-ல் "Ctrl + V" (Paste) செய்து அனுப்பலாம்.')
-      } else {
-        alert('பில் படம் (Bill Image) Download செய்யப்பட்டது! WhatsApp-ல் Attachment-ஆக அனுப்பலாம்.')
-      }
-
-      window.open(waUrl, '_blank')
-    } catch (err) {
-      console.error('Error sharing image:', err)
-      alert('படம் உருவாக்குவதில் பிழை: ' + err.message)
-    } finally {
-      setIsGeneratingImg(false)
-      setShowPhonePrompt(false)
+  const handleWhatsAppClick = () => {
+    const rawMobile = (bill.mobile || '').replace(/[^0-9]/g, '')
+    if (rawMobile.length >= 10) {
+      handleDirectWhatsApp(rawMobile)
+    } else {
+      setShowPhonePrompt(true)
     }
   }
 
@@ -361,15 +377,6 @@ const BillModal = ({ bill, onClose }) => {
       alert('Error downloading image: ' + err.message)
     } finally {
       setIsGeneratingImg(false)
-    }
-  }
-
-  const handleWhatsAppClick = () => {
-    const rawMobile = (bill.mobile || '').replace(/[^0-9]/g, '')
-    if (rawMobile.length >= 10) {
-      handleShareWhatsAppImage(rawMobile)
-    } else {
-      setShowPhonePrompt(true)
     }
   }
 
@@ -541,7 +548,7 @@ const BillModal = ({ bill, onClose }) => {
             <Download size={15} /> {isGeneratingImg ? 'உருவாகிறது...' : 'படம் சேமி (Image)'}
           </button>
 
-          {/* WhatsApp Bill Image Share Button */}
+          {/* WhatsApp Direct Share Button */}
           <button 
             type="button"
             className="btn" 
@@ -560,7 +567,7 @@ const BillModal = ({ bill, onClose }) => {
               borderRadius: '8px'
             }}
           >
-            <MessageCircle size={16} /> {isGeneratingImg ? 'படம் உருவாகிறது...' : 'WhatsApp பில் படம் அனுப்பு'}
+            <MessageCircle size={16} /> WhatsApp-ல் அனுப்பு
           </button>
 
           {/* Print Button */}
@@ -600,7 +607,7 @@ const BillModal = ({ bill, onClose }) => {
             <div className="flex-between mb-12">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <MessageCircle size={20} color="#25D366" />
-                <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>WhatsApp பில் படம் அனுப்புதல்</h3>
+                <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>WhatsApp பில் அனுப்புதல்</h3>
               </div>
               <button className="btn btn-ghost" style={{ padding: '4px', height: 'auto', color: '#64748b' }} onClick={() => setShowPhonePrompt(false)}>
                 <X size={16} />
@@ -628,11 +635,11 @@ const BillModal = ({ bill, onClose }) => {
               </button>
               <button 
                 className="btn" 
-                onClick={() => handleShareWhatsAppImage(customPhone)}
+                onClick={() => handleDirectWhatsApp(customPhone)}
                 disabled={!customPhone || isGeneratingImg}
                 style={{ background: '#25D366', color: '#ffffff', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
               >
-                <Send size={14} /> {isGeneratingImg ? 'அனுப்பப்படுகிறது...' : 'அனுப்பு (Send)'}
+                <Send size={14} /> அனுப்பு (Send)
               </button>
             </div>
           </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Receipt, Search, User, Trash2, ChevronDown, ChevronRight, Calendar, Edit3, X, Check, MessageCircle } from 'lucide-react'
-import BillModal from './BillModal'
+import BillModal, { generateWhatsAppBillText } from './BillModal'
 
 const SoldItems = ({ soldItems = [], onDelete, onUpdateDate, role = 'admin' }) => {
   const [selectedBill, setSelectedBill] = useState(null)
@@ -112,6 +112,29 @@ const SoldItems = ({ soldItems = [], onDelete, onUpdateDate, role = 'admin' }) =
     } finally {
       setIsUpdatingDate(false)
     }
+  }
+
+  const handleDirectWhatsApp = (b) => {
+    let cleanPhone = (b.mobile || '').replace(/[^0-9]/g, '')
+    if (cleanPhone.length === 10) {
+      cleanPhone = '91' + cleanPhone
+    }
+
+    const billMsg = generateWhatsAppBillText({
+      id: b.rawBillId || b.billId,
+      customerName: b.customerName,
+      mobile: b.mobile,
+      date: b.date,
+      items: b.items,
+      metadata: b.metadata
+    })
+
+    const encoded = encodeURIComponent(billMsg)
+    const waUrl = cleanPhone 
+      ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encoded}`
+      : `https://api.whatsapp.com/send?text=${encoded}`
+
+    window.open(waUrl, '_blank')
   }
 
   return (
@@ -234,8 +257,8 @@ const SoldItems = ({ soldItems = [], onDelete, onUpdateDate, role = 'admin' }) =
                           <button
                             className="btn btn-secondary-ghost"
                             style={{ padding: '5px', minWidth: 'auto', height: '30px', color: '#25D366' }}
-                            onClick={() => handleViewBill(b)}
-                            title="WhatsApp-ல் பில் அனுப்பு (Send via WhatsApp)"
+                            onClick={() => handleDirectWhatsApp(b)}
+                            title="வாடிக்கையாளரின் எண்ணிற்கு WhatsApp பில் அனுப்பு"
                           >
                             <MessageCircle size={14} />
                           </button>
