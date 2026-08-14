@@ -248,19 +248,9 @@ const SoldItems = ({ soldItems = [], onDelete, onUpdateDate, role = 'admin' }) =
                             className="btn btn-secondary-ghost"
                             style={{ padding: '5px', minWidth: 'auto', height: '30px' }}
                             onClick={() => handleViewBill(b)}
-                            title="பில் காண்க / அச்சிடு (View / Print Bill)"
+                            title="பில் காண்க / அச்சிடு / WhatsApp அனுப்பு (View / Print / WhatsApp Bill)"
                           >
                             <Receipt size={14} />
-                          </button>
-
-                          {/* Quick WhatsApp Share Button */}
-                          <button
-                            className="btn btn-secondary-ghost"
-                            style={{ padding: '5px', minWidth: 'auto', height: '30px', color: '#25D366' }}
-                            onClick={() => handleDirectWhatsApp(b)}
-                            title="வாடிக்கையாளரின் எண்ணிற்கு WhatsApp பில் அனுப்பு"
-                          >
-                            <MessageCircle size={14} />
                           </button>
                           
                           {/* Edit Date Button */}
