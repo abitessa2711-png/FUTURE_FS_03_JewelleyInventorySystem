@@ -3,16 +3,16 @@ import { Package, ShoppingBag, AlertTriangle, TrendingUp, PlusCircle } from 'luc
 
 const Dashboard = ({ products = [], sales = [], setActiveTab }) => {
   // Aggregate Stats
-  const totalWeight = products.reduce((s, p) => s + ((p.quantity || 0) * (p.weight || 0)), 0)
-  const totalQty    = products.reduce((s, p) => s + (p.quantity || 0), 0)
+  const totalWeight = (products || []).reduce((s, p) => s + (parseFloat(p.weight || 0) || 0), 0)
+  const totalQty    = (products || []).reduce((s, p) => s + (parseInt(p.quantity || 0, 10) || 0), 0)
   const productGroups = {};
-  products.forEach(p => {
-    const key = `${p.category}-${p.subcategory}-${p.variant}`;
+  (products || []).forEach(p => {
+    const key = `${p.category || ''}-${p.subcategory || ''}-${p.variant || ''}`;
     if (!productGroups[key]) {
       productGroups[key] = { ...p, totalQuantity: 0, totalWeight: 0 };
     }
-    productGroups[key].totalQuantity += (p.quantity || 0);
-    productGroups[key].totalWeight += ((p.quantity || 0) * (p.weight || 0));
+    productGroups[key].totalQuantity += (parseInt(p.quantity || 0, 10) || 0);
+    productGroups[key].totalWeight += (parseFloat(p.weight || 0) || 0);
   });
   
   const lowStock = Object.values(productGroups).filter(g => g.totalQuantity < 3);
