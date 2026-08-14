@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Receipt, Search, User, Trash2, ChevronDown, ChevronRight, Calendar, Edit3, X, Check } from 'lucide-react'
+import { Receipt, Search, User, Trash2, ChevronDown, ChevronRight, Calendar, Edit3, X, Check, MessageCircle } from 'lucide-react'
 import BillModal from './BillModal'
 
 const SoldItems = ({ soldItems = [], onDelete, onUpdateDate, role = 'admin' }) => {

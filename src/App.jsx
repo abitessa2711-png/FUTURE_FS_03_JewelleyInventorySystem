@@ -659,19 +659,29 @@ export default function App() {
     return <Login onLogin={setUser} onShowSignup={() => setShowSignup(true)} />
   }
 
-  // ── Pages ──────────────────────────────────────────────────────────────────
-  const pages = {
-    dashboard: <Dashboard      products={products}   sales={soldItems}  setActiveTab={setActiveTab} />,
-    stock:     <StockDashboard products={products}   onDelete={deleteProduct} role={user?.role} />,
-    add:       <AddStock       onAddProduct={addProduct} />,
-    sell:      <SellDashboard  products={products}   processSale={processSale} />,
-    sold:        <SoldItems      soldItems={soldItems} onDelete={deleteSale} onUpdateDate={updateSaleDate} role={user?.role} />,
-    old_buyback: <OldBuyback     buybacks={buybacks}   onAddBuyback={addBuyback} onDeleteBuyback={deleteBuyback} />,
-    audit:       <AuditPage      products={products}   soldItems={soldItems} ledger={ledger} onDeleteProduct={deleteProduct} onDeleteSale={deleteSale} onUpdateDate={updateSaleDate} role={user?.role} />,
-    reports:     <Reports        products={products}   soldItems={soldItems} role={user?.role} deleteProduct={deleteProduct} />
+  // ── Render Active Page Dynamically ──────────────────────────────────────
+  const renderCurrentPage = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return <Dashboard products={products} sales={soldItems} setActiveTab={setActiveTab} />
+      case 'stock':
+        return <StockDashboard products={products} onDelete={deleteProduct} role={user?.role} />
+      case 'add':
+        return <AddStock onAddProduct={addProduct} />
+      case 'sell':
+        return <SellDashboard products={products} processSale={processSale} />
+      case 'sold':
+        return <SoldItems soldItems={soldItems} onDelete={deleteSale} onUpdateDate={updateSaleDate} role={user?.role} />
+      case 'old_buyback':
+        return <OldBuyback buybacks={buybacks} onAddBuyback={addBuyback} onDeleteBuyback={deleteBuyback} />
+      case 'audit':
+        return <AuditPage products={products} soldItems={soldItems} ledger={ledger} onDeleteProduct={deleteProduct} onDeleteSale={deleteSale} onUpdateDate={updateSaleDate} role={user?.role} />
+      case 'reports':
+        return <Reports products={products} soldItems={soldItems} role={user?.role} deleteProduct={deleteProduct} />
+      default:
+        return <Dashboard products={products} sales={soldItems} setActiveTab={setActiveTab} />
+    }
   }
-
-  const currentPage = pages[activeTab] || pages.dashboard
 
   return (
     <div className="app-shell">
@@ -689,7 +699,7 @@ export default function App() {
           onMenuClick={() => setIsSidebarOpen(true)}
         />
         <main className="container animate-fade-in">
-          {currentPage}
+          {renderCurrentPage()}
         </main>
       </div>
     </div>
