@@ -1,9 +1,12 @@
 import React, { useState } from 'react'
-import { Receipt, Search, User, Trash2, ChevronDown, ChevronRight } from 'lucide-react'
+import { Receipt, Search, User, Trash2, ChevronDown, ChevronRight, Calendar, Edit3, X, Check } from 'lucide-react'
 import BillModal from './BillModal'
 
-const SoldItems = ({ soldItems = [], onDelete, role = 'admin' }) => {
+const SoldItems = ({ soldItems = [], onDelete, onUpdateDate, role = 'admin' }) => {
   const [selectedBill, setSelectedBill] = useState(null)
+  const [editingBill, setEditingBill] = useState(null)
+  const [editDateValue, setEditDateValue] = useState('')
+  const [isUpdatingDate, setIsUpdatingDate] = useState(false)
   const [search, setSearch] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo,   setDateTo]   = useState('')
@@ -88,6 +91,29 @@ const SoldItems = ({ soldItems = [], onDelete, role = 'admin' }) => {
     })
   }
 
+  const handleOpenEditDate = (b) => {
+    setEditingBill(b)
+    try {
+      const d = b.date ? new Date(b.date) : new Date()
+      // format as YYYY-MM-DDTHH:mm
+      const localIso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+      setEditDateValue(localIso)
+    } catch(e) {
+      setEditDateValue(new Date().toISOString().slice(0, 16))
+    }
+  }
+
+  const handleSaveDate = async () => {
+    if (!editingBill || !editDateValue || !onUpdateDate) return
+    setIsUpdatingDate(true)
+    try {
+      await onUpdateDate(editingBill.rawBillId || editingBill.id, editDateValue)
+      setEditingBill(null)
+    } finally {
+      setIsUpdatingDate(false)
+    }
+  }
+
   return (
     <div className="animate-fade-in">
       <div className="flex-between mb-16">
@@ -136,7 +162,7 @@ const SoldItems = ({ soldItems = [], onDelete, role = 'admin' }) => {
                 <th style={{ textAlign: 'center', width: '90px' }}>எண்ணிக்கை</th>
                 <th style={{ textAlign: 'right', width: '110px' }}>மொத்த எடை</th>
                 <th style={{ textAlign: 'right', width: '130px' }}>நிகர தொகை (Net Pay)</th>
-                <th style={{ width: '90px', textAlign: 'center' }}>செயல்கள்</th>
+                <th style={{ width: '120px', textAlign: 'center' }}>செயல்கள்</th>
               </tr>
             </thead>
             <tbody>
@@ -147,7 +173,10 @@ const SoldItems = ({ soldItems = [], onDelete, role = 'admin' }) => {
                     <tr style={{ background: isExpanded ? 'rgba(212,175,55,0.03)' : 'transparent' }}>
                       <td style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-sub)' }}>{i + 1}</td>
                       <td style={{ fontSize: 12, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>
-                        {b.date ? new Date(b.date).toLocaleDateString('en-IN') : '—'}
+                        <div>{b.date ? new Date(b.date).toLocaleDateString('en-IN') : '—'}</div>
+                        <div style={{ fontSize: 10, color: 'var(--text-sub)', opacity: 0.8 }}>
+                          {b.date ? new Date(b.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : ''}
+                        </div>
                       </td>
                       <td style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold)' }}>
                         {b.rawBillId || b.billId}
@@ -191,19 +220,30 @@ const SoldItems = ({ soldItems = [], onDelete, role = 'admin' }) => {
                         ₹{Number(b.netTotal).toFixed(2)}
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '5px' }}>
                           <button
                             className="btn btn-secondary-ghost"
-                            style={{ padding: '6px', minWidth: 'auto', height: '30px' }}
+                            style={{ padding: '5px', minWidth: 'auto', height: '30px' }}
                             onClick={() => handleViewBill(b)}
                             title="பில் காண்க / அச்சிடு (View / Print Bill)"
                           >
                             <Receipt size={14} />
                           </button>
+                          
+                          {/* Edit Date Button */}
+                          <button
+                            className="btn btn-secondary-ghost"
+                            style={{ padding: '5px', minWidth: 'auto', height: '30px', color: 'var(--gold)' }}
+                            onClick={() => handleOpenEditDate(b)}
+                            title="தேதியை மாற்று (Change / Edit Bill Date)"
+                          >
+                            <Calendar size={14} />
+                          </button>
+
                           {(role === 'admin' || role === 'auditor') && (
                             <button
                               className="btn btn-danger-ghost"
-                              style={{ padding: '6px', minWidth: 'auto', height: '30px' }}
+                              style={{ padding: '5px', minWidth: 'auto', height: '30px' }}
                               onClick={() => {
                                 if (window.confirm(`இந்த பில்லை (${b.rawBillId || b.billId}) நீக்க வேண்டுமா? இதில் உள்ள ${b.items.length} பொருட்களும் மீண்டும் இருப்பில் சேர்க்கப்படும்.`)) {
                                   onDelete(b.rawBillId || b.id)
@@ -262,6 +302,83 @@ const SoldItems = ({ soldItems = [], onDelete, role = 'admin' }) => {
           </table>
         </div>
       </div>
+
+      {/* Edit Date Modal */}
+      {editingBill && (
+        <div 
+          className="modal-overlay" 
+          onClick={() => setEditingBill(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+        >
+          <div 
+            className="modal-content animate-fade-in" 
+            onClick={e => e.stopPropagation()}
+            style={{ width: '440px', maxWidth: '100%', background: 'var(--card-bg, #1a1a24)', border: '1px solid var(--border)', borderRadius: '12px', padding: '24px' }}
+          >
+            <div className="flex-between mb-16">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Calendar size={18} color="var(--gold)" />
+                <h3 style={{ margin: 0, fontSize: '17px', color: 'var(--text-main)' }}>பில் தேதி திருத்துதல் (Edit Sale Date)</h3>
+              </div>
+              <button className="btn btn-ghost" style={{ padding: '4px', height: 'auto' }} onClick={() => setEditingBill(null)}>
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', marginBottom: '16px', fontSize: '13px' }}>
+              <div style={{ color: 'var(--text-sub)', fontSize: '11px' }}>பில் எண் (Bill ID): <strong style={{ color: 'var(--gold)' }}>{editingBill.rawBillId || editingBill.billId}</strong></div>
+              <div style={{ marginTop: '2px', color: 'var(--text-main)' }}>வாடிக்கையாளர்: <strong>{editingBill.customerName}</strong></div>
+              <div style={{ marginTop: '2px', color: 'var(--text-sub)', fontSize: '12px' }}>தற்போதைய தேதி: {editingBill.date ? new Date(editingBill.date).toLocaleString('en-IN') : '—'}</div>
+            </div>
+
+            <div className="form-group mb-16">
+              <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--gold)' }}>புதிய விற்பனை தேதி & நேரம் (New Date & Time):</label>
+              <input 
+                type="datetime-local" 
+                value={editDateValue} 
+                onChange={e => setEditDateValue(e.target.value)} 
+                style={{ height: '42px', fontSize: '15px', fontWeight: 600, marginTop: '6px' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+              <button 
+                type="button" 
+                className="btn btn-ghost" 
+                style={{ fontSize: '11px', padding: '4px 8px', height: 'auto' }}
+                onClick={() => {
+                  const now = new Date()
+                  const localIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+                  setEditDateValue(localIso)
+                }}
+              >
+                இன்றைய தேதி (Now)
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-ghost" 
+                style={{ fontSize: '11px', padding: '4px 8px', height: 'auto' }}
+                onClick={() => {
+                  const yest = new Date(Date.now() - 86400000)
+                  const localIso = new Date(yest.getTime() - yest.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+                  setEditDateValue(localIso)
+                }}
+              >
+                நேற்றைய தேதி (Yesterday)
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button className="btn btn-secondary" onClick={() => setEditingBill(null)} disabled={isUpdatingDate}>
+                ரத்து (Cancel)
+              </button>
+              <button className="btn btn-gold" onClick={handleSaveDate} disabled={isUpdatingDate || !editDateValue}>
+                {isUpdatingDate ? 'சேமிக்கப்படுகிறது...' : 'தேதியை மாற்று (Save Date)'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedBill && (
         <BillModal bill={selectedBill} onClose={() => setSelectedBill(null)} />

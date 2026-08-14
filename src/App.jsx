@@ -507,6 +507,42 @@ export default function App() {
     }
   }
 
+  const updateSaleDate = async (idOrBillId, newDate) => {
+    try {
+      const isBill = typeof idOrBillId === 'string' && idOrBillId.startsWith('TAS-')
+      const isoDate = new Date(newDate).toISOString()
+
+      if (isBill) {
+        // 1. Update sales table for all rows with this bill_id
+        const { error: saleErr } = await supabase
+          .from('sales')
+          .update({ date: isoDate })
+          .eq('bill_id', idOrBillId)
+        if (saleErr) throw saleErr
+
+        // 2. Also update local state
+        setSoldItems(prev => prev.map(s => s.billId === idOrBillId ? { ...s, date: isoDate } : s))
+      } else {
+        // Single item
+        const { error: saleErr } = await supabase
+          .from('sales')
+          .update({ date: isoDate })
+          .eq('id', idOrBillId)
+        if (saleErr) throw saleErr
+
+        setSoldItems(prev => prev.map(s => (s.id === idOrBillId || Number(s.id) === Number(idOrBillId)) ? { ...s, date: isoDate } : s))
+      }
+
+      await loadData()
+      alert("பில் விற்பனை தேதி வெற்றிகரமாக மாற்றப்பட்டது!")
+      return true
+    } catch (err) {
+      console.error("Error updating sale date:", err)
+      alert("தேதியை மாற்றுவதில் பிழை ஏற்பட்டது: " + err.message)
+      return false
+    }
+  }
+
   const addBuyback = async (buyback) => {
     const { error } = await supabase.from('purchases').insert({
       supplier_name: 'Old Gold/Silver Buyback',
@@ -629,9 +665,9 @@ export default function App() {
     stock:     <StockDashboard products={products}   onDelete={deleteProduct} role={user?.role} />,
     add:       <AddStock       onAddProduct={addProduct} />,
     sell:      <SellDashboard  products={products}   processSale={processSale} />,
-    sold:        <SoldItems      soldItems={soldItems} onDelete={deleteSale} role={user?.role} />,
+    sold:        <SoldItems      soldItems={soldItems} onDelete={deleteSale} onUpdateDate={updateSaleDate} role={user?.role} />,
     old_buyback: <OldBuyback     buybacks={buybacks}   onAddBuyback={addBuyback} onDeleteBuyback={deleteBuyback} />,
-    audit:       <AuditPage      products={products}   soldItems={soldItems} ledger={ledger} onDeleteProduct={deleteProduct} onDeleteSale={deleteSale} role={user?.role} />,
+    audit:       <AuditPage      products={products}   soldItems={soldItems} ledger={ledger} onDeleteProduct={deleteProduct} onDeleteSale={deleteSale} onUpdateDate={updateSaleDate} role={user?.role} />,
     reports:     <Reports        products={products}   soldItems={soldItems} role={user?.role} deleteProduct={deleteProduct} />
   }
 

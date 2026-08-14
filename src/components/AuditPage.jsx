@@ -1,12 +1,15 @@
 import React, { useState } from 'react'
-import { Package, Activity, ChevronDown, ChevronRight, Folder, Layers, Tag, Trash2, Search, Calendar, AlertTriangle } from 'lucide-react'
+import { Package, Activity, ChevronDown, ChevronRight, Folder, Layers, Tag, Trash2, Search, Calendar, AlertTriangle, X } from 'lucide-react'
 
-const AuditPage = ({ products = [], soldItems = [], ledger = [], onDeleteProduct, onDeleteSale, role = 'admin' }) => {
+const AuditPage = ({ products = [], soldItems = [], ledger = [], onDeleteProduct, onDeleteSale, onUpdateDate, role = 'admin' }) => {
   const [expandedCats, setExpandedCats] = useState(new Set())
   const [expandedSubs, setExpandedSubs] = useState(new Set())
   const [expandedVars, setExpandedVars] = useState(new Set())
   const [auditSearch, setAuditSearch] = useState('')
   const [activeAuditTab, setActiveAuditTab] = useState('stock') // 'stock' or 'sales'
+  const [editingSale, setEditingSale] = useState(null)
+  const [editDateVal, setEditDateVal] = useState('')
+  const [isSavingDate, setIsSavingDate] = useState(false)
 
   const toggleCat = (catName) => {
     const newSet = new Set(expandedCats)
@@ -410,18 +413,37 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [], onDeleteProduct
                     <td style={{ textAlign: 'right', padding: '10px', fontWeight: 600 }}>{s.quantity || 0} pcs | {parseFloat(s.weight || 0).toFixed(3)}g</td>
                     <td style={{ textAlign: 'right', padding: '10px', fontWeight: 700, color: 'var(--gold)' }}>₹{Number(s.total || 0).toFixed(2)}</td>
                     <td style={{ textAlign: 'center', padding: '10px' }}>
-                      <button 
-                        className="btn btn-danger-ghost"
-                        style={{ padding: '6px', minWidth: 'auto', height: '28px' }}
-                        onClick={() => {
-                          if (window.confirm(`விற்பனை பதிவு #${s.id} (${s.variant}: ${s.weight}g) நீக்க வேண்டுமா? இது சரக்கு இருப்பை தானாகவே திரும்பச் சேர்க்கும்.`)) {
-                            if (onDeleteSale) onDeleteSale(s.id)
-                          }
-                        }}
-                        title="விற்பனையை நீக்கி இருப்பை மீட்டெடு (Delete Sale & Restore Stock)"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
+                        <button 
+                          className="btn btn-secondary-ghost"
+                          style={{ padding: '5px', minWidth: 'auto', height: '28px', color: 'var(--gold)' }}
+                          onClick={() => {
+                            setEditingSale(s)
+                            try {
+                              const d = s.date ? new Date(s.date) : new Date()
+                              const localIso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+                              setEditDateVal(localIso)
+                            } catch(e) {
+                              setEditDateVal(new Date().toISOString().slice(0, 16))
+                            }
+                          }}
+                          title="விற்பனை தேதியை மாற்று (Edit Sale Date)"
+                        >
+                          <Calendar size={14} />
+                        </button>
+                        <button 
+                          className="btn btn-danger-ghost"
+                          style={{ padding: '5px', minWidth: 'auto', height: '28px' }}
+                          onClick={() => {
+                            if (window.confirm(`விற்பனை பதிவு #${s.id} (${s.variant}: ${s.weight}g) நீக்க வேண்டுமா? இது சரக்கு இருப்பை தானாகவே திரும்பச் சேர்க்கும்.`)) {
+                              if (onDeleteSale) onDeleteSale(s.billId || s.id)
+                            }
+                          }}
+                          title="விற்பனையை நீக்கி இருப்பை மீட்டெடு (Delete Sale & Restore Stock)"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -434,6 +456,97 @@ const AuditPage = ({ products = [], soldItems = [], ledger = [], onDeleteProduct
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Date Modal for Audit */}
+      {editingSale && (
+        <div 
+          className="modal-overlay" 
+          onClick={() => setEditingSale(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+        >
+          <div 
+            className="modal-content animate-fade-in" 
+            onClick={e => e.stopPropagation()}
+            style={{ width: '440px', maxWidth: '100%', background: 'var(--card-bg, #1a1a24)', border: '1px solid var(--border)', borderRadius: '12px', padding: '24px' }}
+          >
+            <div className="flex-between mb-16">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Calendar size={18} color="var(--gold)" />
+                <h3 style={{ margin: 0, fontSize: '17px', color: 'var(--text-main)' }}>விற்பனை தேதி திருத்துதல்</h3>
+              </div>
+              <button className="btn btn-ghost" style={{ padding: '4px', height: 'auto' }} onClick={() => setEditingSale(null)}>
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', marginBottom: '16px', fontSize: '13px' }}>
+              <div style={{ color: 'var(--text-sub)', fontSize: '11px' }}>பில் ID / ID: <strong style={{ color: 'var(--gold)' }}>{editingSale.billId || `#${editingSale.id}`}</strong></div>
+              <div style={{ marginTop: '2px', color: 'var(--text-main)' }}>வாடிக்கையாளர்: <strong>{editingSale.customerName}</strong></div>
+              <div style={{ marginTop: '2px', color: 'var(--text-sub)', fontSize: '12px' }}>பொருள்: {editingSale.variant || editingSale.category} ({editingSale.weight}g)</div>
+              <div style={{ marginTop: '2px', color: 'var(--text-sub)', fontSize: '12px' }}>தற்போதைய தேதி: {editingSale.date ? new Date(editingSale.date).toLocaleString('en-IN') : '—'}</div>
+            </div>
+
+            <div className="form-group mb-16">
+              <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--gold)' }}>புதிய தேதி & நேரம் (New Date & Time):</label>
+              <input 
+                type="datetime-local" 
+                value={editDateVal} 
+                onChange={e => setEditDateVal(e.target.value)} 
+                style={{ height: '42px', fontSize: '15px', fontWeight: 600, marginTop: '6px' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+              <button 
+                type="button" 
+                className="btn btn-ghost" 
+                style={{ fontSize: '11px', padding: '4px 8px', height: 'auto' }}
+                onClick={() => {
+                  const now = new Date()
+                  const localIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+                  setEditDateVal(localIso)
+                }}
+              >
+                இன்றைய தேதி (Now)
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-ghost" 
+                style={{ fontSize: '11px', padding: '4px 8px', height: 'auto' }}
+                onClick={() => {
+                  const yest = new Date(Date.now() - 86400000)
+                  const localIso = new Date(yest.getTime() - yest.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+                  setEditDateVal(localIso)
+                }}
+              >
+                நேற்றைய தேதி (Yesterday)
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button className="btn btn-secondary" onClick={() => setEditingSale(null)} disabled={isSavingDate}>
+                ரத்து (Cancel)
+              </button>
+              <button 
+                className="btn btn-gold" 
+                onClick={async () => {
+                  if (!editingSale || !editDateVal || !onUpdateDate) return
+                  setIsSavingDate(true)
+                  try {
+                    await onUpdateDate(editingSale.billId || editingSale.id, editDateVal)
+                    setEditingSale(null)
+                  } finally {
+                    setIsSavingDate(false)
+                  }
+                }} 
+                disabled={isSavingDate || !editDateVal}
+              >
+                {isSavingDate ? 'சேமிக்கப்படுகிறது...' : 'தேதியை மாற்று (Save Date)'}
+              </button>
+            </div>
           </div>
         </div>
       )}
