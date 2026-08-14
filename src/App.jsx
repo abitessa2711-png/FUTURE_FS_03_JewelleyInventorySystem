@@ -362,39 +362,34 @@ export default function App() {
     if (ledgerErr) throw ledgerErr
   }
 
-  const deleteSale = async (saleId) => {
+  const deleteSale = async (idOrBillId) => {
     try {
-      const deletedSaleIds = JSON.parse(localStorage.getItem('tas_deleted_sales') || '[]')
-      const numId = Number(saleId)
-
-      // Prevent double stock addition if already deleted
-      if (deletedSaleIds.includes(saleId) || (!isNaN(numId) && deletedSaleIds.includes(numId))) {
-        setSoldItems(prev => prev.filter(item => item.id !== saleId && Number(item.id) !== numId))
-        alert("இந்த விற்பனை ஏற்கனவே நீக்கப்பட்டுவிட்டது.")
-        return
-      }
-
-      // 1. Fetch the sale details first
-      let activeSale = soldItems.find(s => s.id === saleId || Number(s.id) === numId)
+      const isBill = typeof idOrBillId === 'string' && idOrBillId.startsWith('TAS-')
       
-      const { data: saleData } = await supabase
-        .from('sales')
-        .select('*')
-        .eq('id', saleId)
-        .maybeSingle()
-
-      if (saleData) {
-        activeSale = saleData
+      // Find matching items to delete
+      let itemsToDelete = []
+      if (isBill) {
+        itemsToDelete = soldItems.filter(s => s.billId === idOrBillId)
+        if (itemsToDelete.length === 0) {
+          const { data: dbItems } = await supabase.from('sales').select('*').eq('bill_id', idOrBillId)
+          if (dbItems) itemsToDelete = dbItems
+        }
+      } else {
+        const target = soldItems.find(s => s.id === idOrBillId || Number(s.id) === Number(idOrBillId))
+        if (target && target.billId) {
+          itemsToDelete = soldItems.filter(s => s.billId === target.billId)
+        } else if (target) {
+          itemsToDelete = [target]
+        } else {
+          const { data: singleItem } = await supabase.from('sales').select('*').eq('id', idOrBillId).maybeSingle()
+          if (singleItem) itemsToDelete = [singleItem]
+        }
       }
 
-      if (!activeSale) {
-        console.error("Sale not found:", saleId)
+      if (!itemsToDelete.length) {
         alert("விற்பனை விவரத்தை மீட்டெடுக்க முடியவில்லை.")
         return
       }
-
-      // Clean the detail (strip ||METADATA||...)
-      const cleanDetail = (activeSale.detail || '').split('||METADATA||')[0].split('||DELETED||')[0].trim()
 
       // Normalize category name for DB lookup
       const normalizeCat = (cat) => {
@@ -407,50 +402,39 @@ export default function App() {
         return cat
       }
 
-      const rawCatName = normalizeCat(activeSale.category)
-      let cat = dbCategories.find(c => c.name === activeSale.category || c.name === rawCatName)
-      if (!cat && activeSale.category) {
-        cat = dbCategories.find(c => c.name.toLowerCase() === activeSale.category.toLowerCase() || c.name.toLowerCase() === rawCatName.toLowerCase())
-      }
-      const catId = cat ? cat.id : null
+      // 1. Restore Stock for EACH item in the bill
+      for (const item of itemsToDelete) {
+        const cleanDetail = (item.detail || '').split('||METADATA||')[0].split('||DELETED||')[0].trim()
+        const rawCatName = normalizeCat(item.category)
+        let cat = dbCategories.find(c => c.name === item.category || c.name === rawCatName)
+        if (!cat && item.category) {
+          cat = dbCategories.find(c => c.name.toLowerCase() === item.category.toLowerCase() || c.name.toLowerCase() === rawCatName.toLowerCase())
+        }
+        const catId = cat ? cat.id : null
+        const sub = dbSubcategories.find(s => s.name === item.subcategory && (!catId || s.category_id === catId))
+        const subId = sub ? sub.id : null
+        const v = dbVariants.find(vr => vr.name === item.variant && (!catId || vr.category_id === catId))
+        const varId = v ? v.id : null
+        const saleWeight = parseFloat(item.weight || 0)
+        const saleQty = parseInt(item.quantity || 1)
 
-      const sub = dbSubcategories.find(s => s.name === activeSale.subcategory && (!catId || s.category_id === catId))
-      const subId = sub ? sub.id : null
+        if (catId) {
+          const { data: catStocks } = await supabase.from('stock_entries').select('*').eq('category_id', catId)
+          const matchedStock = (catStocks || []).find(st => {
+            const matchSub = (!subId && !st.subcategory_id) || (st.subcategory_id === subId)
+            const matchVar = (!varId && !st.variant_id) || (st.variant_id === varId)
+            const stDetail = (st.detail || '').split('||METADATA||')[0].split('||DELETED||')[0].trim()
+            const matchDetail = stDetail === cleanDetail || (!cleanDetail && !stDetail)
+            const matchWeight = Math.abs((parseFloat(st.weight) || 0) - saleWeight) < 0.001
+            return matchSub && matchVar && matchDetail && matchWeight
+          })
 
-      const v = dbVariants.find(vr => vr.name === activeSale.variant && (!catId || vr.category_id === catId))
-      const varId = v ? v.id : null
-
-      const saleWeight = parseFloat(activeSale.weight || 0)
-      const saleQty = parseInt(activeSale.quantity || 1)
-
-      // 2. Restore Stock in stock_entries if category is known
-      if (catId) {
-        const { data: catStocks } = await supabase
-          .from('stock_entries')
-          .select('*')
-          .eq('category_id', catId)
-
-        const matchedStock = (catStocks || []).find(st => {
-          const matchSub = (!subId && !st.subcategory_id) || (st.subcategory_id === subId)
-          const matchVar = (!varId && !st.variant_id) || (st.variant_id === varId)
-          const stDetail = (st.detail || '').split('||METADATA||')[0].split('||DELETED||')[0].trim()
-          const matchDetail = stDetail === cleanDetail || (!cleanDetail && !stDetail)
-          const matchWeight = Math.abs((parseFloat(st.weight) || 0) - saleWeight) < 0.001
-          return matchSub && matchVar && matchDetail && matchWeight
-        })
-
-        if (matchedStock) {
-          const restoredQty = (parseInt(matchedStock.quantity) || 0) + saleQty
-          const restoredWeight = saleWeight > 0 ? saleWeight : parseFloat(matchedStock.weight || 0)
-
-          await supabase
-            .from('stock_entries')
-            .update({ quantity: restoredQty, weight: restoredWeight })
-            .eq('id', matchedStock.id)
-        } else {
-          await supabase
-            .from('stock_entries')
-            .insert({
+          if (matchedStock) {
+            const restoredQty = (parseInt(matchedStock.quantity) || 0) + saleQty
+            const restoredWeight = saleWeight > 0 ? saleWeight : parseFloat(matchedStock.weight || 0)
+            await supabase.from('stock_entries').update({ quantity: restoredQty, weight: restoredWeight }).eq('id', matchedStock.id)
+          } else {
+            await supabase.from('stock_entries').insert({
               category_id: catId,
               subcategory_id: subId,
               variant_id: varId,
@@ -458,49 +442,43 @@ export default function App() {
               weight: saleWeight,
               quantity: saleQty
             })
+          }
         }
       }
 
-      // 3. Mark in deleted storage so it never re-appears in sales or reports
-      deletedSaleIds.push(saleId)
-      if (!isNaN(numId)) deletedSaleIds.push(numId)
+      // 2. Mark in deleted storage & DB
+      const deletedSaleIds = JSON.parse(localStorage.getItem('tas_deleted_sales') || '[]')
+      const deletedIds = itemsToDelete.map(i => i.id).filter(Boolean)
+      const targetBillId = itemsToDelete[0]?.billId || itemsToDelete[0]?.bill_id
+
+      itemsToDelete.forEach(i => {
+        if (i.id) {
+          deletedSaleIds.push(i.id)
+          if (!isNaN(Number(i.id))) deletedSaleIds.push(Number(i.id))
+        }
+      })
+      if (targetBillId) deletedSaleIds.push(targetBillId)
       localStorage.setItem('tas_deleted_sales', JSON.stringify([...new Set(deletedSaleIds)]))
 
-      // 4. Try hard delete in Supabase
-      await supabase.from('sales').delete().eq('id', saleId)
-
-      // 5. Also soft-delete / wipe row in DB so even if RLS blocked DELETE, row is marked DELETED
-      await supabase.from('sales').update({ 
-        category: 'DELETED', 
-        detail: '||DELETED||' + (activeSale.detail || ''),
-        amount: 0, 
-        quantity: 0, 
-        weight: 0 
-      }).eq('id', saleId)
-
-      // 6. Delete from ledger SELL if exists
-      if (activeSale.date) {
-        await supabase
-          .from('ledger')
-          .delete()
-          .eq('type', 'SELL')
-          .eq('created_at', activeSale.date)
+      // 3. Delete from DB
+      if (targetBillId) {
+        await supabase.from('sales').delete().eq('bill_id', targetBillId)
+        await supabase.from('sales').update({ category: 'DELETED', detail: '||DELETED||', amount: 0, quantity: 0, weight: 0 }).eq('bill_id', targetBillId)
+      }
+      for (const item of itemsToDelete) {
+        if (item.id) {
+          await supabase.from('sales').delete().eq('id', item.id)
+          await supabase.from('sales').update({ category: 'DELETED', detail: '||DELETED||', amount: 0, quantity: 0, weight: 0 }).eq('id', item.id)
+        }
       }
 
-      // 7. Update local state immediately
-      setSoldItems(prev => prev.filter(item => item.id !== saleId && Number(item.id) !== numId))
-
-      // 8. Reload full data from DB
+      // 4. Update local state
+      setSoldItems(prev => prev.filter(s => !deletedIds.includes(s.id) && (!targetBillId || s.billId !== targetBillId)))
       await loadData()
       alert("விற்பனை பதிவு வெற்றிகரமாக நீக்கப்பட்டது! சரக்கு இருப்பு மீண்டும் சேர்க்கப்பட்டது.")
     } catch (err) {
       console.error("Error deleting sale:", err)
-      // Ensure local state and storage are cleaned even on error
-      const deletedSaleIds = JSON.parse(localStorage.getItem('tas_deleted_sales') || '[]')
-      deletedSaleIds.push(saleId)
-      if (!isNaN(Number(saleId))) deletedSaleIds.push(Number(saleId))
-      localStorage.setItem('tas_deleted_sales', JSON.stringify([...new Set(deletedSaleIds)]))
-      setSoldItems(prev => prev.filter(item => item.id !== saleId && Number(item.id) !== Number(saleId)))
+      await loadData()
       alert("விற்பனை பதிவு நீக்கப்பட்டது மற்றும் சரக்கு இருப்பு சரிசெய்யப்பட்டது.")
     }
   }
