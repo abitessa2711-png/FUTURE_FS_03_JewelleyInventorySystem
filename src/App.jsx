@@ -121,16 +121,49 @@ export default function App() {
       .select('*')
       .order('date', { ascending: true })
 
-    const dateOverrides = JSON.parse(localStorage.getItem('tas_sale_date_overrides') || '{}')
+    const localDateOverrides = JSON.parse(localStorage.getItem('tas_sale_date_overrides') || '{}')
+    const syncDateOverrides = {}
+    const syncedDeletedSaleIds = []
 
+    // Parse cross-device cloud audit sync records
     if (salesList) {
+      salesList.forEach(item => {
+        if (item.category === 'AUDIT_SYNC' || item.detail?.includes('||AUDIT_SYNC||')) {
+          try {
+            const rawJson = item.detail.includes('||AUDIT_SYNC||') 
+              ? item.detail.split('||AUDIT_SYNC||')[1] 
+              : item.detail
+            const syncPayload = JSON.parse(rawJson)
+            if (syncPayload.action === 'UPDATE_DATE') {
+              if (syncPayload.billId) syncDateOverrides[syncPayload.billId] = syncPayload.newDate
+              if (Array.isArray(syncPayload.itemIds)) {
+                syncPayload.itemIds.forEach(id => {
+                  syncDateOverrides[String(id)] = syncPayload.newDate
+                  syncDateOverrides[Number(id)] = syncPayload.newDate
+                })
+              }
+            } else if (syncPayload.action === 'DELETE_SALE') {
+              if (syncPayload.targetBillId) syncedDeletedSaleIds.push(syncPayload.targetBillId)
+              if (Array.isArray(syncPayload.itemIds)) syncedDeletedSaleIds.push(...syncPayload.itemIds)
+            }
+          } catch(e) {}
+        }
+      })
+
       setSoldItems(salesList
         .filter(item => 
           !deletedSaleIds.includes(item.id) && 
           !deletedSaleIds.includes(Number(item.id)) && 
           !deletedSaleIds.includes(String(item.id)) &&
+          !syncedDeletedSaleIds.includes(item.id) &&
+          !syncedDeletedSaleIds.includes(Number(item.id)) &&
+          !syncedDeletedSaleIds.includes(String(item.id)) &&
+          (!item.bill_id || !syncedDeletedSaleIds.includes(item.bill_id)) &&
           item.category !== 'DELETED' && 
-          !item.detail?.includes('||DELETED||')
+          item.category !== 'AUDIT_SYNC' &&
+          item.category !== 'SYNC' &&
+          !item.detail?.includes('||DELETED||') &&
+          !item.detail?.includes('||AUDIT_SYNC||')
         )
         .map(item => {
           let catName = item.category || '';
@@ -152,9 +185,12 @@ export default function App() {
             }
           }
 
-          const effectiveDate = dateOverrides[item.bill_id] || 
-                                dateOverrides[String(item.id)] || 
-                                dateOverrides[item.id] || 
+          const effectiveDate = syncDateOverrides[item.bill_id] || 
+                                syncDateOverrides[String(item.id)] || 
+                                syncDateOverrides[item.id] || 
+                                localDateOverrides[item.bill_id] || 
+                                localDateOverrides[String(item.id)] || 
+                                localDateOverrides[item.id] || 
                                 item.date
 
           return {
@@ -468,17 +504,19 @@ export default function App() {
       if (targetBillId) deletedSaleIds.push(targetBillId)
       localStorage.setItem('tas_deleted_sales', JSON.stringify([...new Set(deletedSaleIds)]))
 
-      // 3. Delete from DB
-      if (targetBillId) {
-        await supabase.from('sales').delete().eq('bill_id', targetBillId)
-        await supabase.from('sales').update({ category: 'DELETED', detail: '||DELETED||', amount: 0, quantity: 0, weight: 0 }).eq('bill_id', targetBillId)
-      }
-      for (const item of itemsToDelete) {
-        if (item.id) {
-          await supabase.from('sales').delete().eq('id', item.id)
-          await supabase.from('sales').update({ category: 'DELETED', detail: '||DELETED||', amount: 0, quantity: 0, weight: 0 }).eq('id', item.id)
-        }
-      }
+      // 3. Sync deletion to cloud database via AUDIT_SYNC
+      await supabase.from('sales').insert({
+        customer_name: 'AUDIT_SYNC',
+        category: 'AUDIT_SYNC',
+        subcategory: 'DELETE_SALE',
+        variant: targetBillId || String(idOrBillId),
+        bill_id: targetBillId || String(idOrBillId),
+        detail: `||AUDIT_SYNC||${JSON.stringify({ action: 'DELETE_SALE', targetBillId: targetBillId, itemIds: deletedIds })}`,
+        weight: 0,
+        quantity: 0,
+        amount: 0,
+        date: new Date().toISOString()
+      }).catch(() => {})
 
       // 4. Update local state
       setSoldItems(prev => prev.filter(s => !deletedIds.includes(s.id) && (!targetBillId || s.billId !== targetBillId)))
@@ -534,23 +572,23 @@ export default function App() {
       })
       localStorage.setItem('tas_sale_date_overrides', JSON.stringify(dateOverrides))
 
-      // 2. If we have numeric item IDs, attempt update in Supabase
-      if (idsToUpdate.length > 0) {
-        await supabase
-          .from('sales')
-          .update({ date: isoDate })
-          .in('id', idsToUpdate)
-      }
+      // 2. Broadcast date modification to Cloud Database via AUDIT_SYNC
+      await supabase.from('sales').insert({
+        customer_name: 'AUDIT_SYNC',
+        category: 'AUDIT_SYNC',
+        subcategory: 'UPDATE_DATE',
+        variant: strVal,
+        bill_id: strVal,
+        detail: `||AUDIT_SYNC||${JSON.stringify({ action: 'UPDATE_DATE', billId: strVal, itemIds: idsToUpdate, newDate: isoDate })}`,
+        weight: 0,
+        quantity: 0,
+        rate: 0,
+        discount_amount: 0,
+        amount: 0,
+        date: isoDate
+      }).catch(e => console.warn('Cloud sync:', e))
 
-      // 3. If it's a bill ID (or any string bill_id), attempt update in Supabase
-      if (strVal && !strVal.startsWith('SINGLE-') && !strVal.startsWith('ID-')) {
-        await supabase
-          .from('sales')
-          .update({ date: isoDate })
-          .eq('bill_id', strVal)
-      }
-
-      // 4. Immediately update UI state
+      // 3. Immediately update UI state
       setSoldItems(prev => prev.map(s => {
         const matchBill = (s.billId && s.billId === strVal) || (s.rawBillId && s.rawBillId === strVal)
         const matchId = idsToUpdate.includes(s.id) || idsToUpdate.includes(Number(s.id)) || String(s.id) === strVal
