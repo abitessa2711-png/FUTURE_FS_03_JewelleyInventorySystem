@@ -121,6 +121,8 @@ export default function App() {
       .select('*')
       .order('date', { ascending: true })
 
+    const dateOverrides = JSON.parse(localStorage.getItem('tas_sale_date_overrides') || '{}')
+
     if (salesList) {
       setSoldItems(salesList
         .filter(item => 
@@ -149,6 +151,12 @@ export default function App() {
               console.error('Metadata parsing failed:', e)
             }
           }
+
+          const effectiveDate = dateOverrides[item.bill_id] || 
+                                dateOverrides[String(item.id)] || 
+                                dateOverrides[item.id] || 
+                                item.date
+
           return {
             id: item.id,
             billId: item.bill_id,
@@ -163,7 +171,7 @@ export default function App() {
             pricePerGram: parseFloat(item.rate || 0),
             discountAmount: parseFloat(item.discount_amount || 0),
             total: parseFloat(item.amount || 0),
-            date: item.date,
+            date: effectiveDate,
             metadata: extractedMetadata
           };
         })
@@ -517,7 +525,16 @@ export default function App() {
         ? [...itemIds] 
         : (!isNaN(numVal) && numVal > 0 ? [numVal] : [])
 
-      // 1. If we have numeric item IDs, update them directly in Supabase
+      // 1. Save date overrides to localStorage so changes persist permanently
+      const dateOverrides = JSON.parse(localStorage.getItem('tas_sale_date_overrides') || '{}')
+      if (strVal) dateOverrides[strVal] = isoDate
+      idsToUpdate.forEach(id => {
+        dateOverrides[String(id)] = isoDate
+        dateOverrides[Number(id)] = isoDate
+      })
+      localStorage.setItem('tas_sale_date_overrides', JSON.stringify(dateOverrides))
+
+      // 2. If we have numeric item IDs, attempt update in Supabase
       if (idsToUpdate.length > 0) {
         await supabase
           .from('sales')
@@ -525,7 +542,7 @@ export default function App() {
           .in('id', idsToUpdate)
       }
 
-      // 2. If it's a bill ID (or any string bill_id), update all sales with this bill_id
+      // 3. If it's a bill ID (or any string bill_id), attempt update in Supabase
       if (strVal && !strVal.startsWith('SINGLE-') && !strVal.startsWith('ID-')) {
         await supabase
           .from('sales')
@@ -533,7 +550,7 @@ export default function App() {
           .eq('bill_id', strVal)
       }
 
-      // 3. Immediately update UI state
+      // 4. Immediately update UI state
       setSoldItems(prev => prev.map(s => {
         const matchBill = (s.billId && s.billId === strVal) || (s.rawBillId && s.rawBillId === strVal)
         const matchId = idsToUpdate.includes(s.id) || idsToUpdate.includes(Number(s.id)) || String(s.id) === strVal
@@ -543,8 +560,6 @@ export default function App() {
         return s
       }))
 
-      // Reload fresh data in background
-      loadData().catch(() => {})
       alert("விற்பனை தேதி வெற்றிகரமாக மாற்றப்பட்டது!")
       return true
     } catch (err) {
