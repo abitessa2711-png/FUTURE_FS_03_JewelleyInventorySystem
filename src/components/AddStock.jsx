@@ -22,7 +22,12 @@ const AddStock = ({ onAddProduct }) => {
 
   const getDetails = () => {
     if ((formData.category === 'கொலுசு அளவு' || formData.category === 'சிங்கிள் பட்டி கொலுசு') && formData.variant) {
-      return MASTER_DATA['கொலுசு விவரம்'][formData.variant] || []
+      return MASTER_DATA['கொலுசு விவரம்']?.[formData.variant] || []
+    }
+    if (formData.subcategory === 'விளக்குகள்' || formData.category === 'வெள்ளி விளக்கு' || formData.variant?.includes('விளக்கு') || formData.subcategory === 'குத்து விளக்கு') {
+      if (formData.variant?.includes('குத்து விளக்கு') || formData.subcategory === 'குத்து விளக்கு') {
+        return ["4 முகம்", "5 முகம்", "ஆன்டிக் கலெக்ஷன்", "சாதா"]
+      }
     }
     return []
   }
