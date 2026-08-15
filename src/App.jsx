@@ -509,32 +509,38 @@ export default function App() {
 
   const updateSaleDate = async (idOrBillId, newDate) => {
     try {
-      const isBill = typeof idOrBillId === 'string' && idOrBillId.startsWith('TAS-')
       const isoDate = new Date(newDate).toISOString()
+      const strVal = String(idOrBillId || '')
+      const numVal = parseInt(strVal.replace(/[^0-9]/g, ''), 10)
 
-      if (isBill) {
-        // 1. Update sales table for all rows with this bill_id
-        const { error: saleErr } = await supabase
+      // 1. If it's a bill ID (or any string bill_id)
+      if (strVal && !strVal.startsWith('SINGLE-')) {
+        await supabase
           .from('sales')
           .update({ date: isoDate })
-          .eq('bill_id', idOrBillId)
-        if (saleErr) throw saleErr
-
-        // 2. Also update local state
-        setSoldItems(prev => prev.map(s => s.billId === idOrBillId ? { ...s, date: isoDate } : s))
-      } else {
-        // Single item
-        const { error: saleErr } = await supabase
-          .from('sales')
-          .update({ date: isoDate })
-          .eq('id', idOrBillId)
-        if (saleErr) throw saleErr
-
-        setSoldItems(prev => prev.map(s => (s.id === idOrBillId || Number(s.id) === Number(idOrBillId)) ? { ...s, date: isoDate } : s))
+          .eq('bill_id', strVal)
       }
 
+      // 2. Also try updating by numeric ID
+      if (!isNaN(numVal) && numVal > 0) {
+        await supabase
+          .from('sales')
+          .update({ date: isoDate })
+          .eq('id', numVal)
+      }
+
+      // 3. Immediately update UI state
+      setSoldItems(prev => prev.map(s => {
+        const matchBill = s.billId && s.billId === strVal
+        const matchId = s.id === numVal || Number(s.id) === numVal || String(s.id) === strVal
+        if (matchBill || matchId) {
+          return { ...s, date: isoDate }
+        }
+        return s
+      }))
+
       await loadData()
-      alert("பில் விற்பனை தேதி வெற்றிகரமாக மாற்றப்பட்டது!")
+      alert("விற்பனை தேதி வெற்றிகரமாக மாற்றப்பட்டது!")
       return true
     } catch (err) {
       console.error("Error updating sale date:", err)

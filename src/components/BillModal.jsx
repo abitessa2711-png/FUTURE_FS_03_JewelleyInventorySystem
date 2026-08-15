@@ -10,11 +10,18 @@ export const generateWhatsAppBillText = (bill) => {
   const grossTotal = parseFloat(meta.overallBillTotal || 0) > 0 ? parseFloat(meta.overallBillTotal) : itemsSum
   const oldSilverAmount = parseFloat(meta.oldSilverAmount || 0)
   const discountAmount = parseFloat(meta.billDiscount || 0)
-  const netTotal = Math.max(0, grossTotal - oldSilverAmount - discountAmount)
+  const chitAmount = parseFloat(meta.chitAmount || 0)
+  const netTotal = Math.max(0, grossTotal - oldSilverAmount - discountAmount - chitAmount)
+
+  let chitText = ''
+  if (chitAmount > 0) {
+    chitText = `\n🎟️ *நகை சீட்டு கழிவு:* - ₹${chitAmount.toFixed(2)}`
+  }
 
   return `✨ *TAS JEWELLERS - விற்பனை ரசீது* ✨
 🧾 *பில் எண்:* ${bill.id || bill.rawBillId || 'N/A'}
 👤 *வாடிக்கையாளர்:* ${bill.customerName || 'Walk-in'}
+💰 *மொத்த மதிப்பு:* ₹${grossTotal.toFixed(2)}${chitText}
 💎 *நிகரத் தொகை:* ₹${netTotal.toFixed(2)}
 📞 Ph: 9597258369, 7867807337`
 }
@@ -35,13 +42,14 @@ const BillModal = ({ bill, onClose }) => {
   const oldSilverAmount = parseFloat(meta.oldSilverAmount || 0)
   const oldSilverWeight = parseFloat(meta.oldSilverWeight || 0)
   const discountAmount = parseFloat(meta.billDiscount || 0)
-  const netTotal = Math.max(0, grossTotal - oldSilverAmount - discountAmount)
+  const chitAmount = parseFloat(meta.chitAmount || 0)
+  const netTotal = Math.max(0, grossTotal - oldSilverAmount - discountAmount - chitAmount)
 
   // Generate HD Bill Image using Canvas
   const generateBillCanvasBlob = () => {
     return new Promise((resolve) => {
       const width = 800
-      const baseHeight = 620
+      const baseHeight = 630
       const rowHeight = 36
       const extraItemsHeight = Math.max(0, items.length - 1) * rowHeight
       const height = baseHeight + extraItemsHeight
@@ -227,7 +235,7 @@ const BillModal = ({ bill, onClose }) => {
         ctx.fillText('3. 100% தூய தரம் உத்திரவாதம் அளிக்கப்படுகிறது.', 40, currentY + 66)
 
         // Summary Box on Right
-        const summaryBoxHeight = 120 + (oldSilverAmount > 0 ? 20 : 0) + (discountAmount > 0 ? 20 : 0)
+        const summaryBoxHeight = 120 + (oldSilverAmount > 0 ? 20 : 0) + (discountAmount > 0 ? 20 : 0) + (chitAmount > 0 ? 20 : 0)
         ctx.fillStyle = '#f8fafc'
         ctx.fillRect(summaryX, currentY, summaryWidth, summaryBoxHeight)
         ctx.strokeStyle = '#e2e8f0'
@@ -262,6 +270,17 @@ const BillModal = ({ bill, onClose }) => {
           ctx.textAlign = 'right'
           ctx.font = 'bold 13px sans-serif'
           ctx.fillText(`- ₹${discountAmount.toFixed(2)}`, summaryX + summaryWidth - 16, sumY)
+          ctx.textAlign = 'left'
+        }
+
+        if (chitAmount > 0) {
+          sumY += 22
+          ctx.fillStyle = '#b45309'
+          ctx.font = '12px "Noto Sans Tamil", sans-serif'
+          ctx.fillText('நகை சீட்டு கழிவு (Chit Scheme):', summaryX + 16, sumY)
+          ctx.textAlign = 'right'
+          ctx.font = 'bold 13px sans-serif'
+          ctx.fillText(`- ₹${chitAmount.toFixed(2)}`, summaryX + summaryWidth - 16, sumY)
           ctx.textAlign = 'left'
         }
 
@@ -517,6 +536,12 @@ const BillModal = ({ bill, onClose }) => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#dc2626', marginBottom: '6px' }}>
                   <span>தள்ளுபடி (Discount):</span>
                   <span style={{ fontWeight: 700 }}>- ₹{discountAmount.toFixed(2)}</span>
+                </div>
+              )}
+              {chitAmount > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#b45309', marginBottom: '6px' }}>
+                  <span>நகை சீட்டு கழிவு (Chit Scheme):</span>
+                  <span style={{ fontWeight: 700 }}>- ₹{chitAmount.toFixed(2)}</span>
                 </div>
               )}
               <div style={{ borderTop: '2px solid #cbd5e1', margin: '8px 0' }} />

@@ -45,13 +45,15 @@ const SoldItems = ({ soldItems = [], onDelete, onUpdateDate, role = 'admin' }) =
     const grossTotal = parseFloat(meta.overallBillTotal || 0) > 0 ? parseFloat(meta.overallBillTotal) : itemsGross
     const oldSilAmt = parseFloat(meta.oldSilverAmount || 0)
     const discAmt = parseFloat(meta.billDiscount || 0)
-    const netTotal = Math.max(0, grossTotal - oldSilAmt - discAmt)
+    const chitAmt = parseFloat(meta.chitAmount || 0)
+    const netTotal = Math.max(0, grossTotal - oldSilAmt - discAmt - chitAmt)
 
     return {
       ...b,
       grossTotal,
       oldSilAmt,
       discAmt,
+      chitAmt,
       netTotal
     }
   })

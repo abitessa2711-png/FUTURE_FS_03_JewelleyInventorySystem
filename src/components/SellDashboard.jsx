@@ -34,6 +34,7 @@ const SellDashboard = ({ products = [], processSale }) => {
   const [oldSilverWeight, setOldSilverWeight] = useState('')
   const [oldSilverAmount, setOldSilverAmount] = useState('')
   const [billDiscount, setBillDiscount] = useState('')
+  const [chitAmount, setChitAmount] = useState('')
 
   const getSubs = () => {
     if (!formData.category || !MASTER_DATA[formData.category]) return []
@@ -158,7 +159,8 @@ const SellDashboard = ({ products = [], processSale }) => {
   const effectiveGrossTotal = manualBillTotal !== '' ? (parseFloat(manualBillTotal) || 0) : autoSuggestedGross
   const oldSilverDeduction = includeOldSilver ? (parseFloat(oldSilverAmount) || 0) : 0
   const discountDeduction = parseFloat(billDiscount) || 0
-  const netPayable = Math.max(0, effectiveGrossTotal - oldSilverDeduction - discountDeduction)
+  const chitDeduction = parseFloat(chitAmount) || 0
+  const netPayable = Math.max(0, effectiveGrossTotal - oldSilverDeduction - discountDeduction - chitDeduction)
 
   const handleSale = async (printAfterSave = true) => {
     if (!cart.length) {
@@ -171,6 +173,7 @@ const SellDashboard = ({ products = [], processSale }) => {
       const metadata = {
         overallBillTotal: effectiveGrossTotal,
         billDiscount: discountDeduction,
+        chitAmount: chitDeduction,
         oldSilverWeight: includeOldSilver ? (parseFloat(oldSilverWeight) || 0) : 0,
         oldSilverAmount: oldSilverDeduction,
         goldRate: parseFloat(goldRate || 0),
@@ -197,7 +200,7 @@ const SellDashboard = ({ products = [], processSale }) => {
         alert('விற்பனை விவரம் வெற்றிகரமாகச் சேமிக்கப்பட்டது!')
       }
 
-      // Reset cart & financials
+      // Reset form
       setCart([])
       setCustomer({ name: '', mobile: '' })
       setManualBillTotal('')
@@ -205,6 +208,7 @@ const SellDashboard = ({ products = [], processSale }) => {
       setOldSilverWeight('')
       setOldSilverAmount('')
       setBillDiscount('')
+      setChitAmount('')
       try {
         setSaleDate(new Date().toLocaleString('sv-SE').slice(0, 16).replace(' ', 'T'))
       } catch (e) {
@@ -638,6 +642,21 @@ const SellDashboard = ({ products = [], processSale }) => {
                 style={{ height: '36px', fontSize: '13px', borderColor: billDiscount ? 'var(--danger)' : 'var(--border)', color: billDiscount ? 'var(--danger)' : 'var(--text-main)', fontWeight: 600 }}
               />
             </div>
+
+            {/* Jewellery Chit Deduction Input */}
+            <div className="form-group" style={{ margin: 0, borderTop: '1px dashed var(--border)', paddingTop: '10px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 600, color: '#f59e0b' }}>
+                🎟️ நகை சீட்டு கழிவு தொகை (Jewellery Chit / Scheme Amount ₹ - Optional)
+              </label>
+              <input 
+                type="number" 
+                step="0.01" 
+                placeholder="0.00" 
+                value={chitAmount} 
+                onChange={e => setChitAmount(e.target.value)} 
+                style={{ height: '36px', fontSize: '13px', borderColor: chitAmount ? '#f59e0b' : 'var(--border)', color: chitAmount ? '#f59e0b' : 'var(--text-main)', fontWeight: 700 }}
+              />
+            </div>
           </div>
 
           {/* Final Financial Summary */}
@@ -662,6 +681,12 @@ const SellDashboard = ({ products = [], processSale }) => {
                 <div className="flex-between fw-600" style={{ fontSize: '13px', color: 'var(--danger)', marginTop: '3px' }}>
                   <span>தள்ளுபடி (Discount):</span>
                   <span>- ₹{Number(discountDeduction).toFixed(2)}</span>
+                </div>
+              )}
+              {chitDeduction > 0 && (
+                <div className="flex-between fw-600" style={{ fontSize: '13px', color: '#f59e0b', marginTop: '3px' }}>
+                  <span>நகை சீட்டு கழிவு (Chit Scheme):</span>
+                  <span>- ₹{Number(chitDeduction).toFixed(2)}</span>
                 </div>
               )}
               <div style={{ borderTop: '2px solid var(--border)', margin: '8px 0' }} />
