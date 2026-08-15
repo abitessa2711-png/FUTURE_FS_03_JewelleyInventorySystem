@@ -2,17 +2,17 @@ import React from 'react'
 import { Package, ShoppingBag, AlertTriangle, TrendingUp, PlusCircle } from 'lucide-react'
 
 const Dashboard = ({ products = [], sales = [], setActiveTab }) => {
-  // Aggregate Stats
-  const totalWeight = (products || []).reduce((s, p) => s + (parseFloat(p.weight || 0) || 0), 0)
-  const totalQty    = (products || []).reduce((s, p) => s + (parseInt(p.quantity || 0, 10) || 0), 0)
+  const activeProducts = (products || []).filter(p => (parseInt(p.quantity, 10) || 0) > 0)
+  const totalWeight = activeProducts.reduce((s, p) => s + ((parseInt(p.quantity, 10) || 0) * (parseFloat(p.weight) || 0)), 0)
+  const totalQty    = activeProducts.reduce((s, p) => s + (parseInt(p.quantity, 10) || 0), 0)
   const productGroups = {};
-  (products || []).forEach(p => {
+  activeProducts.forEach(p => {
     const key = `${p.category || ''}-${p.subcategory || ''}-${p.variant || ''}`;
     if (!productGroups[key]) {
       productGroups[key] = { ...p, totalQuantity: 0, totalWeight: 0 };
     }
-    productGroups[key].totalQuantity += (parseInt(p.quantity || 0, 10) || 0);
-    productGroups[key].totalWeight += (parseFloat(p.weight || 0) || 0);
+    productGroups[key].totalQuantity += (parseInt(p.quantity, 10) || 0);
+    productGroups[key].totalWeight += ((parseInt(p.quantity, 10) || 0) * (parseFloat(p.weight) || 0));
   });
   
   const lowStock = Object.values(productGroups).filter(g => g.totalQuantity < 3);

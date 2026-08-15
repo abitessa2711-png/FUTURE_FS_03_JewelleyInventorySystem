@@ -54,8 +54,9 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
     (p.quantity > 0 && p.weight > 0)
   )
 
-  const totalStockWeight = products.reduce((s, p) => s + ((p.quantity || 0) * (p.weight || 0)), 0)
-  const totalStockQty    = products.reduce((s, p) => s + (p.quantity || 0), 0)
+  const activeProducts = (products || []).filter(p => (parseInt(p.quantity, 10) || 0) > 0)
+  const totalStockWeight = activeProducts.reduce((s, p) => s + ((parseInt(p.quantity, 10) || 0) * (parseFloat(p.weight) || 0)), 0)
+  const totalStockQty    = activeProducts.reduce((s, p) => s + (parseInt(p.quantity, 10) || 0), 0)
   const totalSalesCount  = soldItems.length
   const totalRevenue     = soldItems.reduce((s, i) => s + (i.total || 0), 0)
 
