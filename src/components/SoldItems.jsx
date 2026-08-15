@@ -175,20 +175,19 @@ const SoldItems = ({ soldItems = [], onDelete, onUpdateDate, role = 'admin' }) =
         </div>
       </div>
 
-      <div className="card">
+      <div className="card" style={{ padding: '12px 14px' }}>
         <div className="table-wrap">
-          <table>
+          <table className="sold-items-table" style={{ width: '100%', tableLayout: 'auto', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={{ width: '45px' }}>S.No</th>
-                <th>தேதி (Date)</th>
-                <th>பில் எண் (Bill ID)</th>
-                <th>வாடிக்கையாளர் (Customer)</th>
-                <th>விற்ற பொருட்கள் (Sold Items)</th>
-                <th style={{ textAlign: 'center', width: '90px' }}>எண்ணிக்கை</th>
-                <th style={{ textAlign: 'right', width: '110px' }}>மொத்த எடை</th>
-                <th style={{ textAlign: 'right', width: '130px' }}>நிகர தொகை (Net Pay)</th>
-                <th style={{ width: '120px', textAlign: 'center' }}>செயல்கள்</th>
+                <th style={{ width: '32px', padding: '8px 4px', textAlign: 'center' }}>#</th>
+                <th style={{ width: '85px', padding: '8px 6px' }}>தேதி (Date)</th>
+                <th style={{ width: '110px', padding: '8px 6px' }}>வாடிக்கையாளர் / பில்</th>
+                <th style={{ padding: '8px 6px' }}>விற்ற பொருட்கள் (Items)</th>
+                <th style={{ textAlign: 'center', width: '65px', padding: '8px 4px' }}>எண்ணிக்கை</th>
+                <th style={{ textAlign: 'right', width: '85px', padding: '8px 6px' }}>மொத்த எடை</th>
+                <th style={{ textAlign: 'right', width: '105px', padding: '8px 6px' }}>நிகர தொகை</th>
+                <th style={{ width: '90px', textAlign: 'center', padding: '8px 4px' }}>செயல்கள்</th>
               </tr>
             </thead>
             <tbody>
@@ -196,23 +195,23 @@ const SoldItems = ({ soldItems = [], onDelete, onUpdateDate, role = 'admin' }) =
                 const isExpanded = !!expandedBills[b.billId]
                 return (
                   <React.Fragment key={b.billId || i}>
-                    <tr style={{ background: isExpanded ? 'rgba(212,175,55,0.03)' : 'transparent' }}>
-                      <td style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-sub)' }}>{i + 1}</td>
-                      <td style={{ fontSize: 12, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>
-                        <div>{b.date ? new Date(b.date).toLocaleDateString('en-IN') : '—'}</div>
-                        <div style={{ fontSize: 10, color: 'var(--text-sub)', opacity: 0.8 }}>
+                    <tr style={{ background: isExpanded ? 'rgba(212,175,55,0.03)' : 'transparent', borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-sub)', textAlign: 'center', padding: '8px 4px' }}>{i + 1}</td>
+                      <td style={{ fontSize: 11, color: 'var(--text-sub)', whiteSpace: 'nowrap', padding: '8px 6px' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>{b.date ? new Date(b.date).toLocaleDateString('en-IN') : '—'}</div>
+                        <div style={{ fontSize: 10, opacity: 0.75 }}>
                           {b.date ? new Date(b.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : ''}
                         </div>
                       </td>
-                      <td style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold)' }}>
-                        {b.rawBillId || b.billId}
+                      <td style={{ padding: '8px 6px' }}>
+                        <div style={{ fontWeight: 700, color: 'var(--gold)', fontSize: '11px', letterSpacing: '0.2px' }}>
+                          {b.rawBillId || b.billId}
+                        </div>
+                        <div className="fw-600" style={{ fontSize: '12px', marginTop: '1px' }}>{b.customerName || 'Walk-in'}</div>
+                        {b.mobile && <div style={{ fontSize: 10, color: 'var(--text-sub)' }}>Ph: {b.mobile}</div>}
                       </td>
-                      <td>
-                        <div className="fw-600">{b.customerName || 'Walk-in'}</div>
-                        {b.mobile && <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>{b.mobile}</div>}
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <td style={{ padding: '8px 6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                           {b.items.length > 1 && (
                             <button 
                               type="button" 
@@ -222,54 +221,54 @@ const SoldItems = ({ soldItems = [], onDelete, onUpdateDate, role = 'admin' }) =
                               {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                             </button>
                           )}
-                          <div style={{ fontSize: '13px' }}>
+                          <div style={{ fontSize: '12px', lineHeight: '1.3' }}>
                             {b.items.length === 1 ? (
                               <span>
-                                <strong>{b.items[0].variant || b.items[0].subcategory}</strong>
-                                <span style={{ fontSize: '11px', color: 'var(--text-sub)', marginLeft: '4px' }}>
+                                <strong style={{ color: 'var(--text-main)' }}>{b.items[0].variant || b.items[0].subcategory}</strong>
+                                <span style={{ fontSize: '10px', color: 'var(--text-sub)', marginLeft: '3px' }}>
                                   ({b.items[0].category})
                                 </span>
                               </span>
                             ) : (
                               <span style={{ cursor: 'pointer' }} onClick={() => toggleExpand(b.billId)}>
-                                <strong>{b.items.length} பொருட்கள்</strong>: {b.items.map(it => it.variant || it.subcategory).join(', ')}
+                                <strong style={{ color: 'var(--gold)' }}>{b.items.length} பொருட்கள்</strong>: {b.items.map(it => it.variant || it.subcategory).join(', ')}
                               </span>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td style={{ textAlign: 'center', fontWeight: 600 }}>{b.totalQuantity} pcs</td>
-                      <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--gold)' }}>
+                      <td style={{ textAlign: 'center', fontWeight: 600, fontSize: '12px', padding: '8px 4px' }}>{b.totalQuantity} pcs</td>
+                      <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--gold)', fontSize: '12px', padding: '8px 6px' }}>
                         {Number(b.totalWeight).toFixed(3)}g
                       </td>
-                      <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--success)', fontSize: '14px' }}>
+                      <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--success)', fontSize: '13px', padding: '8px 6px' }}>
                         ₹{Number(b.netTotal).toFixed(2)}
                       </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: '5px' }}>
+                      <td style={{ textAlign: 'center', padding: '8px 4px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '3px' }}>
                           <button
                             className="btn btn-secondary-ghost"
-                            style={{ padding: '5px', minWidth: 'auto', height: '30px' }}
+                            style={{ padding: '3px', minWidth: '26px', height: '26px' }}
                             onClick={() => handleViewBill(b)}
                             title="பில் காண்க / அச்சிடு / WhatsApp அனுப்பு (View / Print / WhatsApp Bill)"
                           >
-                            <Receipt size={14} />
+                            <Receipt size={13} />
                           </button>
                           
                           {/* Edit Date Button */}
                           <button
                             className="btn btn-secondary-ghost"
-                            style={{ padding: '5px', minWidth: 'auto', height: '30px', color: 'var(--gold)' }}
+                            style={{ padding: '3px', minWidth: '26px', height: '26px', color: 'var(--gold)' }}
                             onClick={() => handleOpenEditDate(b)}
                             title="தேதியை மாற்று (Change / Edit Bill Date)"
                           >
-                            <Calendar size={14} />
+                            <Calendar size={13} />
                           </button>
 
                           {(role === 'admin' || role === 'auditor') && (
                             <button
                               className="btn btn-danger-ghost"
-                              style={{ padding: '5px', minWidth: 'auto', height: '30px' }}
+                              style={{ padding: '3px', minWidth: '26px', height: '26px' }}
                               onClick={() => {
                                 if (window.confirm(`இந்த பில்லை (${b.rawBillId || b.billId}) நீக்க வேண்டுமா? இதில் உள்ள ${b.items.length} பொருட்களும் மீண்டும் இருப்பில் சேர்க்கப்படும்.`)) {
                                   onDelete(b.rawBillId || b.id)
@@ -277,7 +276,7 @@ const SoldItems = ({ soldItems = [], onDelete, onUpdateDate, role = 'admin' }) =
                               }}
                               title="Delete Bill"
                             >
-                              <Trash2 size={14} />
+                              <Trash2 size={13} />
                             </button>
                           )}
                         </div>
