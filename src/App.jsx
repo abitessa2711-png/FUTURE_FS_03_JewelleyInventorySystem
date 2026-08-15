@@ -505,18 +505,22 @@ export default function App() {
       localStorage.setItem('tas_deleted_sales', JSON.stringify([...new Set(deletedSaleIds)]))
 
       // 3. Sync deletion to cloud database via AUDIT_SYNC
-      await supabase.from('sales').insert({
-        customer_name: 'AUDIT_SYNC',
-        category: 'AUDIT_SYNC',
-        subcategory: 'DELETE_SALE',
-        variant: targetBillId || String(idOrBillId),
-        bill_id: targetBillId || String(idOrBillId),
-        detail: `||AUDIT_SYNC||${JSON.stringify({ action: 'DELETE_SALE', targetBillId: targetBillId, itemIds: deletedIds })}`,
-        weight: 0,
-        quantity: 0,
-        amount: 0,
-        date: new Date().toISOString()
-      }).catch(() => {})
+      try {
+        await supabase.from('sales').insert({
+          customer_name: 'AUDIT_SYNC',
+          category: 'AUDIT_SYNC',
+          subcategory: 'DELETE_SALE',
+          variant: targetBillId || String(idOrBillId),
+          bill_id: targetBillId || String(idOrBillId),
+          detail: `||AUDIT_SYNC||${JSON.stringify({ action: 'DELETE_SALE', targetBillId: targetBillId, itemIds: deletedIds })}`,
+          weight: 0,
+          quantity: 0,
+          amount: 0,
+          date: new Date().toISOString()
+        })
+      } catch(syncErr) {
+        console.warn('Sync delete notice:', syncErr)
+      }
 
       // 4. Update local state
       setSoldItems(prev => prev.filter(s => !deletedIds.includes(s.id) && (!targetBillId || s.billId !== targetBillId)))
@@ -573,20 +577,24 @@ export default function App() {
       localStorage.setItem('tas_sale_date_overrides', JSON.stringify(dateOverrides))
 
       // 2. Broadcast date modification to Cloud Database via AUDIT_SYNC
-      await supabase.from('sales').insert({
-        customer_name: 'AUDIT_SYNC',
-        category: 'AUDIT_SYNC',
-        subcategory: 'UPDATE_DATE',
-        variant: strVal,
-        bill_id: strVal,
-        detail: `||AUDIT_SYNC||${JSON.stringify({ action: 'UPDATE_DATE', billId: strVal, itemIds: idsToUpdate, newDate: isoDate })}`,
-        weight: 0,
-        quantity: 0,
-        rate: 0,
-        discount_amount: 0,
-        amount: 0,
-        date: isoDate
-      }).catch(e => console.warn('Cloud sync:', e))
+      try {
+        await supabase.from('sales').insert({
+          customer_name: 'AUDIT_SYNC',
+          category: 'AUDIT_SYNC',
+          subcategory: 'UPDATE_DATE',
+          variant: strVal,
+          bill_id: strVal,
+          detail: `||AUDIT_SYNC||${JSON.stringify({ action: 'UPDATE_DATE', billId: strVal, itemIds: idsToUpdate, newDate: isoDate })}`,
+          weight: 0,
+          quantity: 0,
+          rate: 0,
+          discount_amount: 0,
+          amount: 0,
+          date: isoDate
+        })
+      } catch (syncErr) {
+        console.warn('Cloud sync insert notice:', syncErr)
+      }
 
       // 3. Immediately update UI state
       setSoldItems(prev => prev.map(s => {
