@@ -507,39 +507,44 @@ export default function App() {
     }
   }
 
-  const updateSaleDate = async (idOrBillId, newDate) => {
+  const updateSaleDate = async (idOrBillId, newDate, itemIds = []) => {
     try {
       const isoDate = new Date(newDate).toISOString()
       const strVal = String(idOrBillId || '')
       const numVal = parseInt(strVal.replace(/[^0-9]/g, ''), 10)
 
-      // 1. If it's a bill ID (or any string bill_id)
-      if (strVal && !strVal.startsWith('SINGLE-')) {
+      const idsToUpdate = Array.isArray(itemIds) && itemIds.length > 0 
+        ? [...itemIds] 
+        : (!isNaN(numVal) && numVal > 0 ? [numVal] : [])
+
+      // 1. If we have numeric item IDs, update them directly in Supabase
+      if (idsToUpdate.length > 0) {
+        await supabase
+          .from('sales')
+          .update({ date: isoDate })
+          .in('id', idsToUpdate)
+      }
+
+      // 2. If it's a bill ID (or any string bill_id), update all sales with this bill_id
+      if (strVal && !strVal.startsWith('SINGLE-') && !strVal.startsWith('ID-')) {
         await supabase
           .from('sales')
           .update({ date: isoDate })
           .eq('bill_id', strVal)
       }
 
-      // 2. Also try updating by numeric ID
-      if (!isNaN(numVal) && numVal > 0) {
-        await supabase
-          .from('sales')
-          .update({ date: isoDate })
-          .eq('id', numVal)
-      }
-
       // 3. Immediately update UI state
       setSoldItems(prev => prev.map(s => {
-        const matchBill = s.billId && s.billId === strVal
-        const matchId = s.id === numVal || Number(s.id) === numVal || String(s.id) === strVal
+        const matchBill = (s.billId && s.billId === strVal) || (s.rawBillId && s.rawBillId === strVal)
+        const matchId = idsToUpdate.includes(s.id) || idsToUpdate.includes(Number(s.id)) || String(s.id) === strVal
         if (matchBill || matchId) {
           return { ...s, date: isoDate }
         }
         return s
       }))
 
-      await loadData()
+      // Reload fresh data in background
+      loadData().catch(() => {})
       alert("விற்பனை தேதி வெற்றிகரமாக மாற்றப்பட்டது!")
       return true
     } catch (err) {

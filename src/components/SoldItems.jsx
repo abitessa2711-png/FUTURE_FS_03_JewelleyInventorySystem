@@ -109,7 +109,8 @@ const SoldItems = ({ soldItems = [], onDelete, onUpdateDate, role = 'admin' }) =
     if (!editingBill || !editDateValue || !onUpdateDate) return
     setIsUpdatingDate(true)
     try {
-      await onUpdateDate(editingBill.rawBillId || editingBill.id, editDateValue)
+      const itemIds = (editingBill.items || []).map(it => it.id).filter(Boolean)
+      await onUpdateDate(editingBill.rawBillId || editingBill.billId || editingBill.id, editDateValue, itemIds)
       setEditingBill(null)
     } finally {
       setIsUpdatingDate(false)
