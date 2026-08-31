@@ -15,7 +15,7 @@ const Login = ({ onLogin, onShowSignup }) => {
     
     try {
       // ── Demo Bypass for Testing & Client Delivery ──────────────────────────
-      if (loginId.trim() === 'admin@tas.com' && password === 'tasadmin@123') {
+      if (loginId.trim() === 'admin@tas.com' && password === 'tasshop@admin') {
         onLogin({
           id: 'admin-bypass-id',
           name: 'TAS Admin',
