@@ -53,7 +53,7 @@ const GstAuditPurgeModal = ({ soldItems = [], onPurgeSales, onClose, role }) => 
   const totalWeightKg   = totalWeightGrams / 1000
   const totalRevenue    = matchingBills.reduce((s, b) => s + b.netTotal, 0)
 
-  // 1. Generate & Download PDF / Printable GST Audit Report
+  // 1. Generate & Download PDF / Printable Backup Audit Report
   const handleGeneratePdf = () => {
     if (matchingBills.length === 0) return
 
@@ -96,7 +96,7 @@ const GstAuditPurgeModal = ({ soldItems = [], onPurgeSales, onClose, role }) => 
       <!DOCTYPE html>
       <html>
         <head>
-          <title>GST Audit Sales Report (${dateFrom || 'All'} to ${dateTo || 'Today'})</title>
+          <title>Sales Audit & Backup Report (${dateFrom || 'All'} to ${dateTo || 'Today'})</title>
           <style>
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #0f172a; margin: 0; }
             .header { border-bottom: 2px solid #b45309; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
@@ -119,7 +119,7 @@ const GstAuditPurgeModal = ({ soldItems = [], onPurgeSales, onClose, role }) => 
           <div class="header">
             <div>
               <h1 class="title">TAS JEWELLERS</h1>
-              <div class="sub">GST & INCOME TAX AUDIT SALES REPORT</div>
+              <div class="sub">SALES AUDIT & BACKUP REPORT</div>
             </div>
             <div style="text-align: right; font-size: 11px;">
               <div><strong>Period:</strong> ${dateFrom || 'Start'} to ${dateTo || 'Today'}</div>
@@ -141,7 +141,7 @@ const GstAuditPurgeModal = ({ soldItems = [], onPurgeSales, onClose, role }) => 
               <div class="stat-val">${totalWeightGrams.toFixed(3)} g</div>
             </div>
             <div class="stat-box" style="border-left: 2px dashed #f59e0b; padding-left: 16px;">
-              <div class="stat-lbl" style="color: #b45309;">GST Total (KG)</div>
+              <div class="stat-lbl" style="color: #b45309;">Total Weight (KG)</div>
               <div class="stat-val" style="color: #b45309; font-size: 20px;">${totalWeightKg.toFixed(3)} kg</div>
             </div>
             <div class="stat-box">
@@ -169,7 +169,7 @@ const GstAuditPurgeModal = ({ soldItems = [], onPurgeSales, onClose, role }) => 
           </table>
 
           <div class="footer">
-            <div>Verified GST Sales Report & Archive Record</div>
+            <div>Verified Sales Report & Archive Record</div>
             <div>Authorized Signature & Stamp: ______________________</div>
           </div>
 
@@ -235,10 +235,10 @@ const GstAuditPurgeModal = ({ soldItems = [], onPurgeSales, onClose, role }) => 
             </div>
             <div>
               <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: 'var(--gold)' }}>
-                விற்பனை காப்பகம் & GST பேக்கப் (GST Sales Archive & Purge)
+                விற்பனை காப்பகம் & பேக்கப் (Sales Archive & Backup Purge)
               </h3>
               <p style={{ fontSize: 12, color: 'var(--text-sub)', margin: '2px 0 0 0' }}>
-                Download PDF report for GST / Income Tax audits & permanently remove sales records without restoring stock.
+                Download PDF report for Sales Backup & Audit & permanently remove sales records without restoring stock.
               </p>
             </div>
           </div>
@@ -296,7 +296,7 @@ const GstAuditPurgeModal = ({ soldItems = [], onPurgeSales, onClose, role }) => 
                 <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--gold)' }}>{totalWeightGrams.toFixed(3)} g</div>
               </div>
               <div style={{ background: 'rgba(212,175,55,0.12)', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--gold)' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)' }}>GST AUDIT (KG)</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)' }}>TOTAL WEIGHT (KG)</div>
                 <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--gold)' }}>{totalWeightKg.toFixed(3)} kg</div>
               </div>
               <div>
@@ -319,10 +319,10 @@ const GstAuditPurgeModal = ({ soldItems = [], onPurgeSales, onClose, role }) => 
             <div>
               <div style={{ fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <FileText size={16} color="var(--gold)" />
-                படி 1: GST விற்பனை அறிக்கை PDF பதிவிறக்கம் (Step 1: Download PDF Report)
+                படி 1: விற்பனை அறிக்கை PDF பதிவிறக்கம் (Step 1: Download PDF Report)
               </div>
               <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2 }}>
-                Income tax / GST கணக்குகளுக்குத் தேவையான விற்பனை அறிக்கையை PDF கோப்பாகச் சேமிக்கும்.
+                கணக்குகளுக்குத் தேவையான விற்பனை அறிக்கையை PDF கோப்பாகச் சேமிக்கும்.
               </div>
             </div>
             <button 
@@ -341,7 +341,7 @@ const GstAuditPurgeModal = ({ soldItems = [], onPurgeSales, onClose, role }) => 
             <div>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Trash2 size={16} />
-                படி 2: விற்பனைப் பதிவுகளை நிரந்தரமாக நீக்குதல் (Step 2: Permanent GST Purge)
+                படி 2: விற்பனைப் பதிவுகளை நிரந்தரமாக நீக்குதல் (Step 2: Permanent Sales Purge)
               </div>
               <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2 }}>
                 ⚠️ **கவனிக்க**: இந்த விற்பனைப் பதிவுகள் நிரந்தரமாக நீக்கப்படும். <strong>இவை சரக்கு இருப்பில் (Stock) மீண்டும் சேர்க்கப்படாது.</strong>

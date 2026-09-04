@@ -160,10 +160,10 @@ const SoldItems = ({ soldItems = [], onDelete, onUpdateDate, onPurgeSales, role 
             className="btn btn-gold" 
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px' }}
             onClick={() => setShowGstModal(true)}
-            title="GST / Income Tax Sales Backup PDF & Permanent Purge"
+            title="Sales Backup PDF & Permanent Purge"
           >
             <ShieldCheck size={16} />
-            <span>GST பேக்கப் & நிரந்தர நீக்கம் (GST Audit Backup)</span>
+            <span>பேக்கப் & நிரந்தர நீக்கம் (Sales Backup)</span>
           </button>
         )}
       </div>
