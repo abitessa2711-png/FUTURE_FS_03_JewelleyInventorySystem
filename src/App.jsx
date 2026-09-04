@@ -533,6 +533,54 @@ export default function App() {
     }
   }
 
+  const permanentPurgeSales = async (itemIdsToPurge = [], billIdsToPurge = []) => {
+    try {
+      const deletedSaleIds = JSON.parse(localStorage.getItem('tas_deleted_sales') || '[]')
+      const allPurgeIds = [...itemIdsToPurge, ...billIdsToPurge].filter(Boolean)
+      const updatedDeletedSaleIds = [...new Set([...deletedSaleIds, ...allPurgeIds])]
+      localStorage.setItem('tas_deleted_sales', JSON.stringify(updatedDeletedSaleIds))
+
+      // 1. Delete from Supabase sales table directly
+      if (billIdsToPurge.length > 0) {
+        await supabase.from('sales').delete().in('bill_id', billIdsToPurge)
+      }
+      if (itemIdsToPurge.length > 0) {
+        await supabase.from('sales').delete().in('id', itemIdsToPurge)
+      }
+
+      // 2. Broadcast permanent purge to cloud database via AUDIT_SYNC
+      try {
+        await supabase.from('sales').insert({
+          customer_name: 'AUDIT_SYNC',
+          category: 'AUDIT_SYNC',
+          subcategory: 'PURGE_SALES',
+          variant: 'GST_PURGE',
+          bill_id: 'PURGE-' + Date.now(),
+          detail: `||AUDIT_SYNC||${JSON.stringify({ action: 'DELETE_SALE', targetBillId: null, itemIds: itemIdsToPurge, billIds: billIdsToPurge })}`,
+          weight: 0,
+          quantity: 0,
+          amount: 0,
+          date: new Date().toISOString()
+        })
+      } catch(e) {}
+
+      // 3. Immediately update UI state WITHOUT touching stock_entries (stock remains untouched!)
+      setSoldItems(prev => prev.filter(s => {
+        const matchId = itemIdsToPurge.includes(s.id) || itemIdsToPurge.includes(Number(s.id))
+        const matchBill = billIdsToPurge.includes(s.billId) || billIdsToPurge.includes(s.rawBillId)
+        return !matchId && !matchBill
+      }))
+
+      await loadData()
+      alert("விற்பனை அறிக்கைப் பதிவுகள் வெற்றிகரமாக நீக்கப்பட்டன! சரக்கு இருப்பில் எந்த மாற்றமும் செய்யப்படவில்லை.")
+      return true
+    } catch (err) {
+      console.error("Error purging sales:", err)
+      alert("நீக்குவதில் பிழை ஏற்பட்டது: " + err.message)
+      return false
+    }
+  }
+
   const deleteProduct = async (id) => {
     try {
       const deletedStockIds = JSON.parse(localStorage.getItem('tas_deleted_stocks') || '[]')

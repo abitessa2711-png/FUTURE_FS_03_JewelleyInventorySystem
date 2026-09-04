@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
-import { Receipt, Search, User, Trash2, ChevronDown, ChevronRight, Calendar, Edit3, X, Check, MessageCircle } from 'lucide-react'
+import { Receipt, Search, User, Trash2, ChevronDown, ChevronRight, Calendar, Edit3, X, Check, MessageCircle, ShieldCheck } from 'lucide-react'
 import BillModal, { generateWhatsAppBillText } from './BillModal'
+import GstAuditPurgeModal from './GstAuditPurgeModal'
 
-const SoldItems = ({ soldItems = [], onDelete, onUpdateDate, role = 'admin' }) => {
+const SoldItems = ({ soldItems = [], onDelete, onUpdateDate, onPurgeSales, role = 'admin' }) => {
   const [selectedBill, setSelectedBill] = useState(null)
   const [editingBill, setEditingBill] = useState(null)
   const [editDateValue, setEditDateValue] = useState('')
@@ -11,6 +12,7 @@ const SoldItems = ({ soldItems = [], onDelete, onUpdateDate, role = 'admin' }) =
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo,   setDateTo]   = useState('')
   const [expandedBills, setExpandedBills] = useState({})
+  const [showGstModal, setShowGstModal] = useState(false)
 
   const toggleExpand = (billId) => {
     setExpandedBills(prev => ({ ...prev, [billId]: !prev[billId] }))
@@ -142,7 +144,7 @@ const SoldItems = ({ soldItems = [], onDelete, onUpdateDate, role = 'admin' }) =
 
   return (
     <div className="animate-fade-in">
-      <div className="flex-between mb-16">
+      <div className="flex-between mb-16" style={{ flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h2 style={{ fontSize: '24px', fontWeight: 700 }}>விற்பனை வரலாறு (Sales Bills)</h2>
           <p className="text-sub">
@@ -152,6 +154,18 @@ const SoldItems = ({ soldItems = [], onDelete, onUpdateDate, role = 'admin' }) =
             மொத்த வசூல்: ₹{Number(totalAmount).toFixed(2)}
           </p>
         </div>
+
+        {(role === 'admin' || role === 'auditor') && (
+          <button 
+            className="btn btn-gold" 
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px' }}
+            onClick={() => setShowGstModal(true)}
+            title="GST / Income Tax Sales Backup PDF & Permanent Purge"
+          >
+            <ShieldCheck size={16} />
+            <span>GST பேக்கப் & நிரந்தர நீக்கம் (GST Audit Backup)</span>
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -403,6 +417,15 @@ const SoldItems = ({ soldItems = [], onDelete, onUpdateDate, role = 'admin' }) =
             </div>
           </div>
         </div>
+      )}
+
+      {showGstModal && (
+        <GstAuditPurgeModal 
+          soldItems={soldItems} 
+          onPurgeSales={onPurgeSales} 
+          onClose={() => setShowGstModal(false)} 
+          role={role} 
+        />
       )}
 
       {selectedBill && (

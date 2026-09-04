@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
-import { Package, ShoppingBag, Trash2, Search, TrendingUp } from 'lucide-react'
+import { Package, ShoppingBag, Trash2, Search, TrendingUp, ShieldCheck } from 'lucide-react'
+import GstAuditPurgeModal from './GstAuditPurgeModal'
 
-const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduct }) => {
+const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduct, onPurgeSales }) => {
   const [filter, setFilter] = useState('')
+  const [showGstModal, setShowGstModal] = useState(false)
 
   // ── Aggregation rules for Summary Dashboard (அறிக்கை) ────────────────────
   const groupedStock = {}
@@ -62,11 +64,23 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
 
   return (
     <div className="animate-fade-in">
-      <div className="flex-between mb-16">
+      <div className="flex-between mb-16" style={{ flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h2 style={{ fontSize: '24px', fontWeight: 700 }}>அறிக்கைகள் & கணக்கு</h2>
           <p className="text-sub">Full Inventory Summary & Sales History</p>
         </div>
+
+        {(role === 'admin' || role === 'auditor') && (
+          <button 
+            className="btn btn-gold" 
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px' }}
+            onClick={() => setShowGstModal(true)}
+            title="GST / Income Tax Sales Backup PDF & Permanent Purge"
+          >
+            <ShieldCheck size={16} />
+            <span>GST பேக்கப் & நிரந்தர நீக்கம் (GST Audit Backup)</span>
+          </button>
+        )}
       </div>
 
       {/* Mini Stats Belt */}
@@ -204,6 +218,15 @@ const Reports = ({ products = [], soldItems = [], bills = [], role, deleteProduc
           </div>
         </div>
       </div>
+
+      {showGstModal && (
+        <GstAuditPurgeModal 
+          soldItems={soldItems} 
+          onPurgeSales={onPurgeSales} 
+          onClose={() => setShowGstModal(false)} 
+          role={role} 
+        />
+      )}
     </div>
   )
 }
