@@ -203,11 +203,14 @@ const GstAuditPurgeModal = ({ soldItems = [], onPurgeSales, onClose, role }) => 
       const billIdsToPurge = []
 
       matchingBills.forEach(b => {
-        if (b.rawBillId || b.billId) {
-          billIdsToPurge.push(b.rawBillId || b.billId)
-        }
+        if (b.rawBillId) billIdsToPurge.push(b.rawBillId)
+        if (b.billId) billIdsToPurge.push(b.billId)
         b.items.forEach(it => {
-          if (it.id) itemIdsToPurge.push(it.id)
+          if (it.id !== undefined && it.id !== null) {
+            itemIdsToPurge.push(it.id)
+            if (!isNaN(Number(it.id))) itemIdsToPurge.push(Number(it.id))
+            itemIdsToPurge.push(String(it.id))
+          }
         })
       })
 

@@ -145,6 +145,7 @@ export default function App() {
             } else if (syncPayload.action === 'DELETE_SALE') {
               if (syncPayload.targetBillId) syncedDeletedSaleIds.push(syncPayload.targetBillId)
               if (Array.isArray(syncPayload.itemIds)) syncedDeletedSaleIds.push(...syncPayload.itemIds)
+              if (Array.isArray(syncPayload.billIds)) syncedDeletedSaleIds.push(...syncPayload.billIds)
             }
           } catch(e) {}
         }
@@ -155,6 +156,7 @@ export default function App() {
           !deletedSaleIds.includes(item.id) && 
           !deletedSaleIds.includes(Number(item.id)) && 
           !deletedSaleIds.includes(String(item.id)) &&
+          (!item.bill_id || !deletedSaleIds.includes(item.bill_id)) &&
           !syncedDeletedSaleIds.includes(item.id) &&
           !syncedDeletedSaleIds.includes(Number(item.id)) &&
           !syncedDeletedSaleIds.includes(String(item.id)) &&
