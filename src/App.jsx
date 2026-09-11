@@ -67,6 +67,25 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
+  // ── Helper to fetch all rows beyond Supabase 1000-row limit ───────────────
+  const fetchAllSupabaseRows = async (table, selectStr, orderCol = 'created_at', ascending = true) => {
+    let all = []
+    let from = 0
+    const step = 1000
+    while (true) {
+      const { data, error } = await supabase
+        .from(table)
+        .select(selectStr)
+        .order(orderCol, { ascending })
+        .range(from, from + step - 1)
+      if (error || !data || data.length === 0) break
+      all.push(...data)
+      if (data.length < step) break
+      from += step
+    }
+    return all
+  }
+
   // ── Load Data from Database ────────────────────────────────────────────────
   const loadLookupTables = async () => {
     const { data: cats } = await supabase.from('categories').select('*')
@@ -84,11 +103,13 @@ export default function App() {
     const deletedStockIds = JSON.parse(localStorage.getItem('tas_deleted_stocks') || '[]')
     const deletedSaleIds = JSON.parse(localStorage.getItem('tas_deleted_sales') || '[]')
 
-    // 2. Fetch products (stock entries)
-    const { data: stocks } = await supabase
-      .from('stock_entries')
-      .select('*, categories(name), subcategories(name), variants(name)')
-      .order('created_at', { ascending: true })
+    // 2. Fetch products (stock entries) - paginated to overcome Supabase 1000 row limit
+    const stocks = await fetchAllSupabaseRows(
+      'stock_entries',
+      '*, categories(name), subcategories(name), variants(name)',
+      'created_at',
+      true
+    )
 
     if (stocks) {
       setProducts(stocks
@@ -126,11 +147,8 @@ export default function App() {
       )
     }
 
-    // 3. Fetch sales history (Sales Module)
-    const { data: salesList } = await supabase
-      .from('sales')
-      .select('*')
-      .order('date', { ascending: true })
+    // 3. Fetch sales history (Sales Module) - paginated
+    const salesList = await fetchAllSupabaseRows('sales', '*', 'date', true)
 
     const localDateOverrides = JSON.parse(localStorage.getItem('tas_sale_date_overrides') || '{}')
     const syncDateOverrides = {}
@@ -235,11 +253,8 @@ export default function App() {
       )
     }
 
-    // 4. Fetch ledger
-    const { data: ledgerList } = await supabase
-      .from('ledger')
-      .select('*')
-      .order('created_at', { ascending: false })
+    // 4. Fetch ledger - paginated to fetch all records beyond 1000 limit
+    const ledgerList = await fetchAllSupabaseRows('ledger', '*', 'created_at', false)
 
     if (ledgerList) {
       setLedger(ledgerList)
