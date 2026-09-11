@@ -152,21 +152,29 @@ export default function App() {
       })
 
       setSoldItems(salesList
-        .filter(item => 
-          !deletedSaleIds.includes(item.id) && 
-          !deletedSaleIds.includes(Number(item.id)) && 
-          !deletedSaleIds.includes(String(item.id)) &&
-          (!item.bill_id || !deletedSaleIds.includes(item.bill_id)) &&
-          !syncedDeletedSaleIds.includes(item.id) &&
-          !syncedDeletedSaleIds.includes(Number(item.id)) &&
-          !syncedDeletedSaleIds.includes(String(item.id)) &&
-          (!item.bill_id || !syncedDeletedSaleIds.includes(item.bill_id)) &&
-          item.category !== 'DELETED' && 
-          item.category !== 'AUDIT_SYNC' &&
-          item.category !== 'SYNC' &&
-          !item.detail?.includes('||DELETED||') &&
-          !item.detail?.includes('||AUDIT_SYNC||')
-        )
+        .filter(item => {
+          const deletedSaleIds = JSON.parse(localStorage.getItem('tas_deleted_sales') || '[]')
+          const purgedBills    = JSON.parse(localStorage.getItem('tas_purged_bills') || '[]')
+          const purgedItems    = JSON.parse(localStorage.getItem('tas_purged_items') || '[]')
+          return (
+            !deletedSaleIds.includes(item.id) &&
+            !deletedSaleIds.includes(Number(item.id)) &&
+            !deletedSaleIds.includes(String(item.id)) &&
+            (!item.bill_id || !deletedSaleIds.includes(item.bill_id)) &&
+            !syncedDeletedSaleIds.includes(item.id) &&
+            !syncedDeletedSaleIds.includes(Number(item.id)) &&
+            !syncedDeletedSaleIds.includes(String(item.id)) &&
+            (!item.bill_id || !syncedDeletedSaleIds.includes(item.bill_id)) &&
+            // Check dedicated purge lists
+            !purgedBills.includes(item.bill_id) &&
+            !purgedItems.includes(String(item.id)) &&
+            item.category !== 'DELETED' &&
+            item.category !== 'AUDIT_SYNC' &&
+            item.category !== 'SYNC' &&
+            !item.detail?.includes('||DELETED||') &&
+            !item.detail?.includes('||AUDIT_SYNC||')
+          )
+        })
         .map(item => {
           let catName = item.category || '';
           if (catName === 'கொலுசு') catName = 'கொலுசு அளவு';
@@ -537,48 +545,61 @@ export default function App() {
 
   const permanentPurgeSales = async (itemIdsToPurge = [], billIdsToPurge = []) => {
     try {
+      // 1. Save purged IDs to dedicated localStorage keys
+      const existingPurgedBills = JSON.parse(localStorage.getItem('tas_purged_bills') || '[]')
+      const existingPurgedItems = JSON.parse(localStorage.getItem('tas_purged_items') || '[]')
+      const updatedPurgedBills = [...new Set([...existingPurgedBills, ...billIdsToPurge])]
+      const updatedPurgedItems = [...new Set([...existingPurgedItems, ...itemIdsToPurge.map(String)])]
+      localStorage.setItem('tas_purged_bills', JSON.stringify(updatedPurgedBills))
+      localStorage.setItem('tas_purged_items', JSON.stringify(updatedPurgedItems))
+
+      // Also store in tas_deleted_sales for backwards compat
       const deletedSaleIds = JSON.parse(localStorage.getItem('tas_deleted_sales') || '[]')
-      const allPurgeIds = [...itemIdsToPurge, ...billIdsToPurge].filter(Boolean)
-      const updatedDeletedSaleIds = [...new Set([...deletedSaleIds, ...allPurgeIds])]
+      const updatedDeletedSaleIds = [...new Set([...deletedSaleIds, ...billIdsToPurge, ...itemIdsToPurge])]
       localStorage.setItem('tas_deleted_sales', JSON.stringify(updatedDeletedSaleIds))
 
-      // 1. Delete from Supabase sales table directly
-      if (billIdsToPurge.length > 0) {
-        await supabase.from('sales').delete().in('bill_id', billIdsToPurge)
-      }
-      if (itemIdsToPurge.length > 0) {
-        await supabase.from('sales').delete().in('id', itemIdsToPurge)
+      // 2. Immediately hide from UI state (before Supabase call)
+      setSoldItems(prev => prev.filter(s => {
+        const billMatch = billIdsToPurge.includes(s.billId) || billIdsToPurge.includes(s.rawBillId)
+        const idMatch = itemIdsToPurge.includes(s.id) || itemIdsToPurge.includes(Number(s.id)) || itemIdsToPurge.includes(String(s.id))
+        return !billMatch && !idMatch
+      }))
+
+      // 3. Delete from Supabase (best effort)
+      try {
+        if (billIdsToPurge.length > 0) {
+          await supabase.from('sales').delete().in('bill_id', billIdsToPurge)
+        }
+        if (itemIdsToPurge.filter(id => !isNaN(Number(id))).length > 0) {
+          const numericIds = itemIdsToPurge.filter(id => !isNaN(Number(id)) && Number.isInteger(Number(id))).map(Number)
+          if (numericIds.length > 0) {
+            await supabase.from('sales').delete().in('id', [...new Set(numericIds)])
+          }
+        }
+      } catch(dbErr) {
+        console.warn('Supabase delete warning (data hidden locally):', dbErr)
       }
 
-      // 2. Broadcast permanent purge to cloud database via AUDIT_SYNC
+      // 4. Broadcast purge to cloud so other devices sync
       try {
         await supabase.from('sales').insert({
           customer_name: 'AUDIT_SYNC',
           category: 'AUDIT_SYNC',
           subcategory: 'PURGE_SALES',
-          variant: 'GST_PURGE',
+          variant: 'BACKUP_PURGE',
           bill_id: 'PURGE-' + Date.now(),
-          detail: `||AUDIT_SYNC||${JSON.stringify({ action: 'DELETE_SALE', targetBillId: null, itemIds: itemIdsToPurge, billIds: billIdsToPurge })}`,
-          weight: 0,
-          quantity: 0,
-          amount: 0,
+          detail: `||AUDIT_SYNC||${JSON.stringify({ action: 'DELETE_SALE', targetBillId: null, itemIds: itemIdsToPurge.filter(id => !isNaN(Number(id))).map(Number), billIds: billIdsToPurge })}`,
+          weight: 0, quantity: 0, amount: 0,
           date: new Date().toISOString()
         })
       } catch(e) {}
 
-      // 3. Immediately update UI state WITHOUT touching stock_entries (stock remains untouched!)
-      setSoldItems(prev => prev.filter(s => {
-        const matchId = itemIdsToPurge.includes(s.id) || itemIdsToPurge.includes(Number(s.id))
-        const matchBill = billIdsToPurge.includes(s.billId) || billIdsToPurge.includes(s.rawBillId)
-        return !matchId && !matchBill
-      }))
-
       await loadData()
-      alert("விற்பனை அறிக்கைப் பதிவுகள் வெற்றிகரமாக நீக்கப்பட்டன! சரக்கு இருப்பில் எந்த மாற்றமும் செய்யப்படவில்லை.")
+      alert(`விற்பனை ${billIdsToPurge.length} பில்கள் வெற்றிகரமாக நீக்கப்பட்டன! சரக்கு இருப்பில் எந்த மாற்றமும் இல்லை.`)
       return true
     } catch (err) {
-      console.error("Error purging sales:", err)
-      alert("நீக்குவதில் பிழை ஏற்பட்டது: " + err.message)
+      console.error('Error purging sales:', err)
+      alert('நீக்குவதில் பிழை: ' + err.message)
       return false
     }
   }
