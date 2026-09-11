@@ -101,11 +101,19 @@ export default function App() {
           else if (catName === 'காப்பு') catName = 'வெள்ளி காப்பு';
           else if (catName === 'வெள்ளி டாலர்') catName = 'டாலர்';
 
+          let subName = item.subcategories?.name || '';
+          if (subName === 'வெளி சங்கு') subName = 'வெள்ளி சங்கு';
+          else if (subName === 'வெளி செம்பு') subName = 'வெள்ளி செம்பு';
+
+          let varName = item.variants?.name || '';
+          if (varName === 'வெளி சங்கு') varName = 'வெள்ளி சங்கு';
+          else if (varName === 'வெளி செம்பு') varName = 'வெள்ளி செம்பு';
+
           return {
             id: item.id,
             category: catName,
-            subcategory: item.subcategories?.name || '',
-            variant: item.variants?.name || '',
+            subcategory: subName,
+            variant: varName,
             detail: item.detail || '',
             weight: parseFloat(item.weight || 0),
             quantity: parseInt(item.quantity || 0),
