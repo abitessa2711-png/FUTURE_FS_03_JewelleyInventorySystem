@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { MASTER_DATA } from '../data/masterData'
 import { Plus, Package } from 'lucide-react'
 
-const CATEGORIES = Object.keys(MASTER_DATA)
+const CATEGORIES = Object.keys(MASTER_DATA).filter(c => c !== 'கொலுசு விவரம்')
 
 const AddStock = ({ onAddProduct }) => {
   const [formData, setFormData] = useState({
@@ -12,7 +12,19 @@ const AddStock = ({ onAddProduct }) => {
   const [loading, setLoading] = useState(false)
   const [success, setLoadingSuccess] = useState(false)
 
-  const getSubs = () => formData.category ? Object.keys(MASTER_DATA[formData.category]) : []
+  const handleCategoryChange = (cat) => {
+    const subs = cat && MASTER_DATA[cat] ? Object.keys(MASTER_DATA[cat]) : []
+    const autoSub = subs.length === 1 ? subs[0] : ''
+    setFormData(prev => ({
+      ...prev,
+      category: cat,
+      subcategory: autoSub,
+      variant: '',
+      detail: ''
+    }))
+  }
+
+  const getSubs = () => formData.category && MASTER_DATA[formData.category] ? Object.keys(MASTER_DATA[formData.category]) : []
   
   const getVariants = () => {
     if (!formData.category || !formData.subcategory) return []
@@ -90,7 +102,7 @@ const AddStock = ({ onAddProduct }) => {
               <label>பிரிவு (Category) *</label>
               <select 
                 value={formData.category} 
-                onChange={e => setFormData({ ...formData, category: e.target.value, subcategory: '', variant: '', detail: '' })} 
+                onChange={e => handleCategoryChange(e.target.value)} 
                 required
               >
                 <option value="">— Select Category —</option>

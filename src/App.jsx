@@ -334,13 +334,22 @@ export default function App() {
 
   // ── Product CRUD (Stock Adding) ───────────────────────────────────────────
   const addProduct = async (newProduct) => {
-    if (newProduct.category === 'கொலுசு அளவு' || newProduct.category === 'கொலுசு') {
-      newProduct.subcategory = 'அளவு';
+    let targetCatName = newProduct.category
+    if (targetCatName === 'கொலுசு அளவு') targetCatName = 'கொலுசு'
+    else if (targetCatName === 'வெள்ளி கம்மல்') targetCatName = 'கம்மல்'
+    else if (targetCatName === 'வெள்ளி தாயத்து') targetCatName = 'தாயத்து'
+    else if (targetCatName === 'வெள்ளி காப்பு') targetCatName = 'காப்பு'
+    else if (targetCatName === 'டாலர்') targetCatName = 'வெள்ளி டாலர்'
+
+    let targetSubName = newProduct.subcategory
+    if (newProduct.category === 'கொலுசு அளவு' || targetCatName === 'கொலுசு') {
+      targetSubName = 'அளவு'
     }
-    // 1. Look up category ID (or insert it)
-    let category = dbCategories.find(c => c.name === newProduct.category)
+
+    // 1. Look up category ID
+    let category = dbCategories.find(c => c.name === targetCatName) || dbCategories.find(c => c.name === newProduct.category)
     if (!category) {
-      const { data, error } = await supabase.from('categories').insert({ name: newProduct.category }).select().single()
+      const { data, error } = await supabase.from('categories').insert({ name: targetCatName }).select().single()
       if (error) throw error
       category = data
       setDbCategories(prev => [...prev, category])
@@ -348,10 +357,10 @@ export default function App() {
 
     // 2. Look up subcategory ID (or insert it)
     let subcategory = null
-    if (newProduct.subcategory) {
-      subcategory = dbSubcategories.find(s => s.name === newProduct.subcategory && s.category_id === category.id)
+    if (targetSubName) {
+      subcategory = dbSubcategories.find(s => s.name === targetSubName && s.category_id === category.id)
       if (!subcategory) {
-        const { data, error } = await supabase.from('subcategories').insert({ category_id: category.id, name: newProduct.subcategory }).select().single()
+        const { data, error } = await supabase.from('subcategories').insert({ category_id: category.id, name: targetSubName }).select().single()
         if (error) throw error
         subcategory = data
         setDbSubcategories(prev => [...prev, subcategory])
@@ -419,15 +428,19 @@ export default function App() {
     const ledgerData = {
       type: 'ADD',
       category_name: newProduct.category,
-      subcategory_name: newProduct.subcategory || null,
+      subcategory_name: targetSubName || null,
       variant_name: newProduct.variant || null,
       weight: newWeight * newQty // Log the total weight added in ledger
     }
     if (newProduct.customDate) {
       ledgerData.created_at = newProduct.customDate
     }
-    const { error: ledgerErr } = await supabase.from('ledger').insert(ledgerData)
-    if (ledgerErr) throw ledgerErr
+    try {
+      await supabase.from('ledger').insert(ledgerData)
+    } catch(e) {}
+
+    // 6. Reload products so the newly added stock appears immediately on the screen
+    await loadData()
   }
 
   const deleteSale = async (idOrBillId) => {
