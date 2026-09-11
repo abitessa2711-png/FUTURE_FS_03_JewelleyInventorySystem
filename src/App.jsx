@@ -814,13 +814,13 @@ export default function App() {
       case 'sell':
         return <SellDashboard products={products} processSale={processSale} />
       case 'sold':
-        return <SoldItems soldItems={soldItems} onDelete={deleteSale} onUpdateDate={updateSaleDate} role={user?.role} />
+        return <SoldItems soldItems={soldItems} onDelete={deleteSale} onUpdateDate={updateSaleDate} onPurgeSales={permanentPurgeSales} role={user?.role} />
       case 'old_buyback':
         return <OldBuyback buybacks={buybacks} onAddBuyback={addBuyback} onDeleteBuyback={deleteBuyback} />
       case 'audit':
-        return <AuditPage products={products} soldItems={soldItems} ledger={ledger} onDeleteProduct={deleteProduct} onDeleteSale={deleteSale} onUpdateDate={updateSaleDate} role={user?.role} />
+        return <AuditPage products={products} soldItems={soldItems} ledger={ledger} onDeleteProduct={deleteProduct} onDeleteSale={deleteSale} onUpdateDate={updateSaleDate} onPurgeSales={permanentPurgeSales} role={user?.role} />
       case 'reports':
-        return <Reports products={products} soldItems={soldItems} role={user?.role} deleteProduct={deleteProduct} />
+        return <Reports products={products} soldItems={soldItems} role={user?.role} deleteProduct={deleteProduct} onPurgeSales={permanentPurgeSales} />
       default:
         return <Dashboard products={products} sales={soldItems} setActiveTab={setActiveTab} />
     }
