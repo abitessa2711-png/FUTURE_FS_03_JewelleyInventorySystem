@@ -104,6 +104,9 @@ export default function App() {
           let subName = item.subcategories?.name || '';
           if (subName === 'வெளி சங்கு') subName = 'வெள்ளி சங்கு';
           else if (subName === 'வெளி செம்பு') subName = 'வெள்ளி செம்பு';
+          if (catName === 'கொலுசு அளவு' && (subName === 'வகைகள்' || !subName)) {
+            subName = 'அளவு';
+          }
 
           let varName = item.variants?.name || '';
           if (varName === 'வெளி சங்கு') varName = 'வெள்ளி சங்கு';
@@ -331,6 +334,9 @@ export default function App() {
 
   // ── Product CRUD (Stock Adding) ───────────────────────────────────────────
   const addProduct = async (newProduct) => {
+    if (newProduct.category === 'கொலுசு அளவு' || newProduct.category === 'கொலுசு') {
+      newProduct.subcategory = 'அளவு';
+    }
     // 1. Look up category ID (or insert it)
     let category = dbCategories.find(c => c.name === newProduct.category)
     if (!category) {
